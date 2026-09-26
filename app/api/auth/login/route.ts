@@ -2,12 +2,17 @@ import argon2 from "argon2";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { ADMIN_SESSION_COOKIE, hashToken, signAdminToken } from "@/lib/auth";
+import { hashToken } from "@/lib/auth-node";
+import { ADMIN_SESSION_COOKIE, signAdminToken } from "@/lib/auth";
 import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
 
 const schema = z.object({
-  email: z.string().email(),
+  email: z
+    .string()
+    .trim()
+    .min(5)
+    .refine((value) => value.includes("@")),
   password: z.string().min(8),
 });
 
@@ -45,10 +50,11 @@ export async function POST(request: Request) {
   });
 
   const response = NextResponse.json({ ok: true });
+  const origin = process.env.APP_ORIGIN ?? "";
   response.cookies.set(ADMIN_SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: origin.startsWith("https:"),
     path: "/",
     maxAge: 8 * 60 * 60,
   });

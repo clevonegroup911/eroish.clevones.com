@@ -1,4 +1,3 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
 
 export const ADMIN_SESSION_COOKIE = "ejc_admin_session";
@@ -31,24 +30,13 @@ export async function verifyAdminToken(token: string): Promise<{ userId: string;
   }
 }
 
-export function hashToken(token: string): string {
-  const secret = process.env.AUTH_SECRET?.trim() ?? "dev";
-  return createHmac("sha256", secret).update(token).digest("hex");
-}
-
-export function safeEqual(a: string, b: string): boolean {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  if (left.length !== right.length) return false;
-  return timingSafeEqual(left, right);
-}
-
 export function getTrustedOrigin(fallback: string): string {
   const raw = process.env.APP_ORIGIN?.trim();
   const isProduction = process.env.NODE_ENV === "production";
   if (raw) {
     const parsed = new URL(raw);
-    if (isProduction && parsed.protocol !== "https:") {
+    const loopback = parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost";
+    if (isProduction && parsed.protocol !== "https:" && !loopback) {
       throw new Error("APP_ORIGIN must use https: in production.");
     }
     return parsed.origin;

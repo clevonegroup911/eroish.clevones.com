@@ -1,4 +1,4 @@
-// Local / CI / tests use SQLite (DATABASE_URL=file:./prisma/dev.db).
+// Local / CI / tests use SQLite (DATABASE_URL=file:./dev.db, next to this schema).
 // Production on the Nginx VM should switch the provider to postgresql
 // and point DATABASE_URL at PostgreSQL — see docs/DEPLOYMENT.md.
 // Do not invent biographical facts in this schema or in seed data.

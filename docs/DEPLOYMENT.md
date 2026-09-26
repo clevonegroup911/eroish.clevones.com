@@ -12,7 +12,7 @@
 | Process manager | PM2 process name `eroish-clevones-com` |
 | Node | ≥ 20.9 |
 | Production database | PostgreSQL 15 on the VM (separate database `eroish_prod`) |
-| Local / CI database | SQLite `file:./prisma/dev.db` |
+| Local / CI database | SQLite `file:./dev.db` (resolved next to `prisma/schema.prisma`) |
 
 This is a **separate app** from `clevones.com`. Do not reuse the `clevones-com` PM2 process, `.env`, or database.
 

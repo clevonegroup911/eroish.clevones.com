@@ -28,8 +28,17 @@ export function PlacesMap({
     <div className="px-5 py-12 md:px-8">
       <svg viewBox="0 0 800 360" className="w-full border border-rule bg-paper-2" role="img" aria-label={dict.places.title}>
         <rect width="800" height="360" fill="#e6e2d8" />
-        <path d="M 120 80 H 680 V 300 H 120 Z" fill="none" stroke="#c8c2b4" />
-        <text x="24" y="28" fontSize="11" letterSpacing="2" fill="#5f5c54">
+        <path
+          d="M 330 70 C 360 55 410 60 445 95 C 470 125 490 170 500 210 C 505 245 490 280 455 300 C 410 318 360 310 330 280 C 300 250 285 200 290 155 C 295 115 310 85 330 70 Z"
+          fill="#ddd7cb"
+          stroke="#c8c2b4"
+        />
+        <path
+          d="M 200 90 C 250 70 310 80 340 110 C 300 150 240 160 210 140 C 190 125 185 105 200 90 Z"
+          fill="#ddd7cb"
+          stroke="#c8c2b4"
+        />
+        <text x="24" y="28" fontSize="11" letterSpacing="1.4" fill="#5f5c54">
           {dict.places.mapCaption}
         </text>
         {mapped.map((place) => {
@@ -37,7 +46,7 @@ export function PlacesMap({
           return (
             <g key={place.id}>
               <circle cx={x} cy={y} r="6" fill="#1a2330" />
-              <text x={x + 10} y={y + 4} fontSize="12" fill="#121211">
+              <text x={x + 12} y={y + 4} fontSize="13" fill="#121211">
                 {locale === "fr" ? place.nameFr : place.nameEn}
               </text>
             </g>

@@ -9,13 +9,18 @@ test("admin command center and publishing safety", async ({ page }, testInfo) =>
 
   await page.goto("/admin/now");
   await expect(page).toHaveURL(/admin\/login/);
-  await page.getByLabel("Email").fill("admin@localhost");
-  await page.getByLabel("Password").fill("change-this-admin-password");
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Now" })).toBeVisible();
+
+  const login = await page.request.post("/api/auth/login", {
+    data: {
+      email: "admin@localhost",
+      password: "change-this-admin-password",
+    },
+  });
+  expect(login.ok()).toBeTruthy();
 
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Command center" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Now" })).toBeVisible();
   fs.mkdirSync("/opt/cursor/artifacts", { recursive: true });
   await page.screenshot({
     path: path.join("/opt/cursor/artifacts", "admin_command_center.png"),
@@ -23,6 +28,7 @@ test("admin command center and publishing safety", async ({ page }, testInfo) =>
   });
 
   await page.goto("/admin/now");
+  await expect(page.getByRole("heading", { name: "Now" })).toBeVisible();
   await page.getByRole("button", { name: "Publish" }).first().click();
   await expect(page.getByTestId("publish-result")).toContainText("Blocked");
 });

@@ -98,8 +98,12 @@ export function retrieveFromApprovedSources(input: {
       const haystack = `${title} ${body} ${source.tags}`;
       return { source, score: scoreSource(tokens, haystack), title, body };
     })
+    .map((row) => {
+      const tokensInBody = tokens.filter((token) => row.body.toLowerCase().includes(token)).length;
+      return { ...row, tokensInBody };
+    })
     .filter((row) => row.score >= 0.34)
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => b.tokensInBody - a.tokensInBody || b.score - a.score)
     .slice(0, 3);
 
   if (!ranked.length) {

@@ -18,8 +18,8 @@ test.describe("public identity", () => {
     await expect(page.getByRole("heading", { name: "Eroish J Clevone" })).toBeVisible();
     await expect(page.getByText("BUILD. LEAD. EXECUTE.")).toBeVisible();
     await expect(page.getByText("Eroish Clevone Jeamson")).toBeVisible();
-    await expect(page.getByText("Kinshasa")).toBeVisible();
-    await expect(page.getByText("CLEVONE SARL")).toBeVisible();
+    await expect(page.getByText(/Born in Kinshasa/).first()).toBeVisible();
+    await expect(page.getByText("Associated with CLEVONE SARL", { exact: true })).toBeVisible();
     await expect(page.locator("body")).not.toContainText("net worth");
     await shot(page, testInfo.project.name === "mobile" ? "homepage_mobile" : "homepage_desktop");
   });
@@ -44,6 +44,11 @@ test.describe("public identity", () => {
     await expect(page.getByText("Example data").first()).toBeVisible();
     await shot(page, `now${suffix}`);
 
+    await page.goto("/en/record");
+    await expect(page.getByRole("heading", { name: "The Record" })).toBeVisible();
+    await expect(page.getByText("Born in Kinshasa").first()).toBeVisible();
+    await shot(page, `record${suffix}`);
+
     await page.goto("/en/proof");
     await expect(page.getByRole("heading", { name: "Proof Graph" })).toBeVisible();
     await expect(page.getByText("Verified").first()).toBeVisible();
@@ -53,7 +58,7 @@ test.describe("public identity", () => {
     await expect(page.getByRole("heading", { name: "Ask EJC" })).toBeVisible();
     await page.getByLabel("Ask EJC").fill("Where was EJC born?");
     await page.getByRole("button", { name: "Ask" }).click();
-    await expect(page.getByText(/Kinshasa/)).toBeVisible();
+    await expect(page.getByText(/Kinshasa/).first()).toBeVisible();
     await page.getByLabel("Ask EJC").fill("What is his net worth?");
     await page.getByRole("button", { name: "Ask" }).click();
     await expect(page.getByText(/not established in the public EJC record/i)).toBeVisible();
@@ -75,7 +80,7 @@ test.describe("public identity", () => {
 
   test("French chrome and explore layer", async ({ page }) => {
     await page.goto("/fr");
-    await expect(page.getByText("Identité publique officielle")).toBeVisible();
+    await expect(page.getByText("Identité publique officielle", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Explorer EJC" }).click();
     await expect(page.getByRole("dialog", { name: "Explorer EJC" })).toBeVisible();
     await page.getByRole("button", { name: "Qui je suis" }).click();

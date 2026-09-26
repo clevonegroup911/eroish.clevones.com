@@ -8,7 +8,7 @@ Conventions (Next.js App Router, Prisma, Nginx/PM2 on the existing VM, security 
 
 - **Next.js 15** App Router, React 19, TypeScript strict
 - **Tailwind CSS v4** editorial tokens (paper / ink / deep — no gold, no gradients)
-- **Prisma** + **SQLite** for local, CI, and tests (`file:./prisma/dev.db`)
+- **Prisma** + **SQLite** for local, CI, and tests (`file:./dev.db` next to the schema)
 - **PostgreSQL** for production on the Nginx VM (provider switch documented in `docs/DEPLOYMENT.md`)
 - **Vitest** unit tests, **Playwright** e2e + screenshots
 - **FR/EN** via `/en` and `/fr`; `/` negotiates `Accept-Language`
