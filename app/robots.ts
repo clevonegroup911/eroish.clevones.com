@@ -1,9 +1,8 @@
 import type { MetadataRoute } from "next";
 
-import { CONFIRMED } from "@/lib/identity";
+import { publicSiteUrl } from "@/lib/site-url";
 
 export default function robots(): MetadataRoute.Robots {
-  const origin = process.env.APP_ORIGIN ?? CONFIRMED.siteUrl;
   return {
     rules: [
       {
@@ -12,7 +11,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin", "/api/"],
       },
     ],
-    sitemap: `${origin}/sitemap.xml`,
-    host: origin,
+    sitemap: `${publicSiteUrl()}/sitemap.xml`,
   };
 }

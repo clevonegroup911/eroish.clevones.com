@@ -23,7 +23,7 @@ export default async function NowPage({ params }: { params: Promise<{ locale: st
             <li key={item.id} className="border border-rule p-5">
               <StatusChip status={item.verification} locale={locale} example={item.exampleFlag} />
               <p className="mt-3 text-[0.7rem] uppercase tracking-[0.14em] text-muted">
-                {item.kind.replaceAll("_", " ")}
+                {dict.nowKinds[item.kind]}
               </p>
               <h2 className="editorial mt-2 text-2xl">{item.title}</h2>
               <p className="mt-3">{item.body}</p>

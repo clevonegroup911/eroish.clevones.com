@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 
-export const ADMIN_SESSION_COOKIE = "ejc_admin_session";
+export { ADMIN_SESSION_COOKIE, isAdminPath, isPublicAdminPath } from "@/lib/auth-cookie";
+
 const SESSION_TTL_SECONDS = Number(process.env.AUTH_SESSION_TTL_SECONDS ?? 28800);
 
 export function getAuthSecret(): Uint8Array {
@@ -45,12 +46,4 @@ export function getTrustedOrigin(fallback: string): string {
     throw new Error("APP_ORIGIN must be set in production.");
   }
   return fallback;
-}
-
-export function isAdminPath(pathname: string): boolean {
-  return pathname === "/admin" || pathname.startsWith("/admin/");
-}
-
-export function isPublicAdminPath(pathname: string): boolean {
-  return pathname === "/admin/login" || pathname.startsWith("/admin/login/");
 }

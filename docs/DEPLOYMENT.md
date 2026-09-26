@@ -36,12 +36,13 @@ Copy `.env.example` on the VM to `/home/clevones/apps/eroish.clevones.com/.env` 
 DATABASE_URL="postgresql://USER:PASSWORD@127.0.0.1:5432/eroish_prod?schema=public"
 AUTH_SECRET="<openssl rand -base64 48>"
 APP_ORIGIN="https://eroish.clevones.com"
+SITE_URL="https://eroish.clevones.com"
 ADMIN_BOOTSTRAP_EMAIL="<operator email>"
 ADMIN_BOOTSTRAP_PASSWORD="<temporary password, rotate immediately>"
 ALLOW_ADMIN_CREATE_IN_PRODUCTION="1"
 ```
 
-`APP_ORIGIN` must be `https` in production. Never commit real secrets.
+`APP_ORIGIN` must be `https` in production. `SITE_URL` is the public origin written into sitemap, robots, and metadata (default `https://eroish.clevones.com`). Never commit real secrets.
 
 ## PostgreSQL vs SQLite
 

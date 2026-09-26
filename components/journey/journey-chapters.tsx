@@ -33,8 +33,8 @@ export function journeyChapters(locale: Locale): Chapter[] {
       {
         id: "builder",
         year: "—",
-        title: "Builder",
-        body: "Entrepreneur, businessman, builder. Les dates de carrière détaillées ne sont pas confirmées.",
+        title: "Bâtisseur",
+        body: "Entrepreneur, homme d’affaires, bâtisseur. Les dates de carrière détaillées ne sont pas confirmées.",
         status: "verified",
       },
       {
@@ -46,7 +46,7 @@ export function journeyChapters(locale: Locale): Chapter[] {
       },
       {
         id: "record",
-        year: "Now",
+        year: "Maintenant",
         title: "Le registre continue",
         body: "Le registre public s’écrit par des faits sourcés. Rien d’autre n’est inventé pour remplir la page.",
         status: "verified",

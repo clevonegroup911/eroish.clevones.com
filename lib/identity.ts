@@ -21,13 +21,8 @@ export const CONFIRMED = {
   birthPlaceCountryFr: "République démocratique du Congo",
   siteHost: "eroish.clevones.com",
   siteUrl: "https://eroish.clevones.com",
-  commandLine: "BUILD. LEAD. EXECUTE.",
   githubDescription: "Entrepreneur, Businessman, Builder",
 } as const;
-
-export const PLATFORM_CYCLE = "BUILD → ACT → PROVE → LEARN → GROW";
-export const SIGNAL_CYCLE =
-  "SIGNAL → UNDERSTANDING → DECISION → ACTION → EXECUTION → EVIDENCE → RESULT → LEARNING";
 
 export function personJsonLd(origin: string) {
   return {

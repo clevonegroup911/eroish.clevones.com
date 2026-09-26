@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { IBM_Plex_Sans, Newsreader } from "next/font/google";
 
 import { CONFIRMED, personJsonLd } from "@/lib/identity";
+import { defaultLocale, isLocale } from "@/lib/i18n";
+import { publicSiteUrl } from "@/lib/site-url";
 
 import "./globals.css";
 
@@ -19,7 +22,9 @@ const newsreader = Newsreader({
   display: "swap",
 });
 
-const origin = process.env.APP_ORIGIN ?? CONFIRMED.siteUrl;
+export const dynamic = "force-dynamic";
+
+const origin = publicSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(origin),
@@ -58,11 +63,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headerLocale = (await headers()).get("x-locale") ?? defaultLocale;
+  const locale = isLocale(headerLocale) ? headerLocale : defaultLocale;
   const jsonLd = personJsonLd(origin);
 
   return (
-    <html lang="en" className={`${plex.variable} ${newsreader.variable}`}>
+    <html lang={locale} className={`${plex.variable} ${newsreader.variable}`}>
       <body className="min-h-screen bg-paper text-ink antialiased">
         <script
           type="application/ld+json"

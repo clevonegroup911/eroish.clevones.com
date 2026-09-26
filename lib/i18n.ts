@@ -26,7 +26,48 @@ const en = {
     publicName: "Eroish J Clevone",
     fullName: "Eroish Clevone Jeamson",
     roles: "Entrepreneur · Businessman · Builder",
-    command: "BUILD. LEAD. EXECUTE.",
+    title: "Founder/CEO",
+  },
+  nowKinds: {
+    FOCUS: "Focus",
+    OBJECTIVE: "Objective",
+    CHALLENGE: "Challenge",
+    DECISION: "Decision",
+    LATEST_ACTION: "Latest action",
+    LATEST_RESULT: "Latest result",
+    LATEST_LESSON: "Latest lesson",
+    LATEST_SIGNAL: "Latest signal",
+  },
+  recordKinds: {
+    DECISION: "Decision",
+    ACTION: "Action",
+    RESULT: "Result",
+    MILESTONE: "Milestone",
+    LESSON: "Lesson",
+    PUBLIC_EVENT: "Public event",
+  },
+  cycles: {
+    platform: "Build → Act → Prove → Learn → Grow",
+    signal:
+      "Signal → Understanding → Decision → Action → Execution → Evidence → Result → Learning",
+  },
+  sources: {
+    mandate: "Confirmed public facts for this official identity platform",
+  },
+  counts: {
+    proofs: { one: "published proof", other: "published proofs" },
+    places: { one: "confirmed place", other: "confirmed places" },
+    ventures: { one: "venture exposure", other: "venture exposures" },
+    pendingPlaces: { one: "place awaiting confirmation", other: "places awaiting confirmation" },
+  },
+  proofNodes: {
+    "identity-name": "Name",
+    "origin-kinshasa": "Origin",
+    "nationality-congolese": "Nationality",
+    "role-founder-ceo": "Role",
+  },
+  portrait: {
+    overlay: "Portrait to be supplied",
   },
   nav: {
     explore: "Explore EJC",
@@ -65,6 +106,9 @@ const en = {
       "Education, early life chronology, additional places, awards, media, and other claims remain structured placeholders until EJC confirms them with sources.",
     systemsTitle: "The public systems",
     portraitCaption: "Portrait to be supplied — honest placeholder, not a stock face.",
+    bornIn: "Born in",
+    associatedWith: "Associated with",
+    nationality: "Congolese",
   },
   now: {
     title: "Now",
@@ -85,6 +129,7 @@ const en = {
       PUBLIC_EVENT: "Public events",
     },
     empty: "No published record items match this filter.",
+    filtersAria: "Record filters",
     fields: {
       year: "Year",
       date: "Date",
@@ -108,6 +153,7 @@ const en = {
       CORRECTED: "Corrected",
       NEEDS_CONFIRMATION: "Needs confirmation",
     },
+    inspect: "Inspect",
   },
   ledger: {
     title: "Reputation Ledger",
@@ -120,6 +166,7 @@ const en = {
     lead: "Seeing, thinking, questioning, learning, deciding, and changing one's mind — with permanent URLs and revision history.",
     empty: "No published thinking yet.",
     exampleBanner: "Example structure — not an attributed essay until EJC writes and approves it.",
+    revisions: "Revisions",
   },
   challenge: {
     title: "Challenge EJC",
@@ -192,11 +239,18 @@ const en = {
     lead: "A multicultural, cosmopolitan, Third Culture dimension — without naming cities that are not confirmed.",
     confirmed: "Confirmed",
     needs: "Needs confirmation",
-    mapCaption: "Only confirmed coordinates are placed on the map.",
+    mapCaption: "Schematic, not to scale. Only confirmed places are shown.",
+    schematicNote: "Kinshasa is shown in western DRC. Other lived places stay off the map until confirmed.",
+    schematicTitle: "Schematic — western DRC",
+    eastNote: "east (not plotted)",
+    westLabel: "western DRC",
+    mobileItem: "western DRC (schematic, not to scale)",
   },
   identity: {
     title: "Who I am",
     lead: "Name, origin, role — and nothing invented beyond that.",
+    venturesTitle: "Ventures — exposure",
+    venturesLead: "Not a product catalogue. An entrepreneurial journey.",
   },
   principles: {
     title: "Principles",
@@ -241,14 +295,55 @@ const fr: Dictionary = {
   meta: {
     title: "Eroish J Clevone — EJC",
     description:
-      "Identité publique officielle d’Eroish Clevone Jeamson. Nom public Eroish J Clevone. Signature EJC. Entrepreneur congolais, businessman, builder, fondateur et CEO.",
+      "Identité publique officielle d’Eroish Clevone Jeamson. Nom public Eroish J Clevone. Signature EJC. Entrepreneur congolais, homme d’affaires, bâtisseur, fondateur et CEO.",
   },
   brand: {
     signature: "EJC",
     publicName: "Eroish J Clevone",
     fullName: "Eroish Clevone Jeamson",
-    roles: "Entrepreneur · Businessman · Builder",
-    command: "BUILD. LEAD. EXECUTE.",
+    roles: "Entrepreneur · Homme d’affaires · Bâtisseur",
+    title: "Fondateur et CEO",
+  },
+  nowKinds: {
+    FOCUS: "Focalisation",
+    OBJECTIVE: "Objectif",
+    CHALLENGE: "Défi",
+    DECISION: "Décision",
+    LATEST_ACTION: "Dernière action",
+    LATEST_RESULT: "Dernier résultat",
+    LATEST_LESSON: "Dernière leçon",
+    LATEST_SIGNAL: "Dernier signal",
+  },
+  recordKinds: {
+    DECISION: "Décision",
+    ACTION: "Action",
+    RESULT: "Résultat",
+    MILESTONE: "Jalon",
+    LESSON: "Leçon",
+    PUBLIC_EVENT: "Événement public",
+  },
+  cycles: {
+    platform: "Construire → Agir → Prouver → Apprendre → Grandir",
+    signal:
+      "Signal → Compréhension → Décision → Action → Exécution → Preuve → Résultat → Apprentissage",
+  },
+  sources: {
+    mandate: "Faits publics confirmés pour cette plateforme d’identité officielle",
+  },
+  counts: {
+    proofs: { one: "preuve publiée", other: "preuves publiées" },
+    places: { one: "lieu confirmé", other: "lieux confirmés" },
+    ventures: { one: "exposition de venture", other: "expositions de venture" },
+    pendingPlaces: { one: "lieu à confirmer", other: "lieux à confirmer" },
+  },
+  proofNodes: {
+    "identity-name": "Nom",
+    "origin-kinshasa": "Origine",
+    "nationality-congolese": "Nationalité",
+    "role-founder-ceo": "Rôle",
+  },
+  portrait: {
+    overlay: "Portrait à fournir",
   },
   nav: {
     explore: "Explorer EJC",
@@ -287,6 +382,9 @@ const fr: Dictionary = {
       "Formation, chronologie de jeunesse, autres lieux, distinctions, médias et autres affirmations restent des placeholders structurés jusqu’à confirmation sourcée par EJC.",
     systemsTitle: "Les systèmes publics",
     portraitCaption: "Portrait à fournir — placeholder honnête, pas un visage de banque d’images.",
+    bornIn: "Né à",
+    associatedWith: "Associé à",
+    nationality: "Congolais",
   },
   now: {
     title: "Maintenant",
@@ -307,6 +405,7 @@ const fr: Dictionary = {
       PUBLIC_EVENT: "Événements publics",
     },
     empty: "Aucun élément publié pour ce filtre.",
+    filtersAria: "Filtres du registre",
     fields: {
       year: "Année",
       date: "Date",
@@ -330,6 +429,7 @@ const fr: Dictionary = {
       CORRECTED: "Corrigé",
       NEEDS_CONFIRMATION: "À confirmer",
     },
+    inspect: "Inspecter",
   },
   ledger: {
     title: "Registre d’engagements",
@@ -342,6 +442,7 @@ const fr: Dictionary = {
     lead: "Voir, penser, questionner, apprendre, décider, changer d’avis — URL permanente et historique.",
     empty: "Aucune pensée publiée.",
     exampleBanner: "Structure d’exemple — pas un essai attribué tant qu’EJC ne l’a pas écrit et approuvé.",
+    revisions: "Révisions",
   },
   challenge: {
     title: "Challenger EJC",
@@ -414,11 +515,18 @@ const fr: Dictionary = {
     lead: "Une dimension multiculturelle, cosmopolite, Third Culture Kid — sans nommer des villes non confirmées.",
     confirmed: "Confirmé",
     needs: "À confirmer",
-    mapCaption: "Seules les coordonnées confirmées sont placées sur la carte.",
+    mapCaption: "Schéma, pas à l’échelle. Seuls les lieux confirmés sont indiqués.",
+    schematicNote: "Kinshasa est indiqué à l’ouest de la RDC. Les autres lieux vécus restent hors carte jusqu’à confirmation.",
+    schematicTitle: "Schéma — ouest de la RDC",
+    eastNote: "est (non placé)",
+    westLabel: "ouest de la RDC",
+    mobileItem: "ouest de la RDC (schéma, pas à l’échelle)",
   },
   identity: {
     title: "Qui je suis",
     lead: "Nom, origine, rôle — rien d’inventé au-delà.",
+    venturesTitle: "Ventures — exposition",
+    venturesLead: "Pas un catalogue de produits. Un parcours entrepreneurial.",
   },
   principles: {
     title: "Principes",

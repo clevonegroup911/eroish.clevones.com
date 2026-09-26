@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { HtmlLang } from "@/components/layout/html-lang";
 import { PageShell } from "@/components/layout/page-shell";
 import { getDictionary, isLocale, type Locale } from "@/lib/i18n";
 
@@ -20,7 +19,7 @@ export async function generateMetadata({
   if (!isLocale(raw)) return {};
   const dict = getDictionary(raw);
   return {
-    title: dict.meta.title,
+    title: { absolute: dict.meta.title },
     description: dict.meta.description,
     alternates: {
       languages: {
@@ -44,11 +43,8 @@ export default async function LocaleLayout({
   const dict = getDictionary(locale);
 
   return (
-    <div lang={locale}>
-      <HtmlLang locale={locale} />
-      <PageShell locale={locale} dict={dict}>
-        {children}
-      </PageShell>
-    </div>
+    <PageShell locale={locale} dict={dict}>
+      {children}
+    </PageShell>
   );
 }

@@ -1,4 +1,12 @@
-export function PortraitPlaceholder({ caption }: { caption: string }) {
+export function PortraitPlaceholder({
+  caption,
+  overlay,
+  onDark,
+}: {
+  caption: string;
+  overlay: string;
+  onDark?: boolean;
+}) {
   return (
     <figure className="max-w-sm">
       <svg
@@ -25,14 +33,16 @@ export function PortraitPlaceholder({ caption }: { caption: string }) {
           y="372"
           textAnchor="middle"
           fontFamily="var(--font-plex), sans-serif"
-          fontSize="10"
-          letterSpacing="2"
-          fill="#5f5c54"
+          fontSize="11"
+          letterSpacing="1.2"
+          fill="#121211"
         >
-          PORTRAIT TO BE SUPPLIED
+          {overlay}
         </text>
       </svg>
-      <figcaption className="mt-3 text-sm text-muted">{caption}</figcaption>
+      <figcaption className={`mt-3 text-sm ${onDark ? "text-paper" : "text-ink-soft"}`}>
+        {caption}
+      </figcaption>
     </figure>
   );
 }

@@ -105,6 +105,29 @@ export async function attemptPublish(entity: string, id: string): Promise<Action
   return { ok: true };
 }
 
+export async function updateIdentityTagline(formData: FormData) {
+  const admin = await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const commandLine = String(formData.get("commandLine") ?? "").trim();
+  if (!id) return;
+  await prisma.identityProfile.update({
+    where: { id },
+    data: { commandLine },
+  });
+  await writeAudit({
+    actorId: admin.id,
+    action: "TAGLINE_UPDATE",
+    entity: "IdentityProfile",
+    entityId: id,
+    summary: commandLine
+      ? "Optional tagline stored — not a confirmed public statement until sourced"
+      : "Optional tagline cleared",
+  });
+  revalidatePath("/admin/identity");
+  revalidatePath("/en");
+  revalidatePath("/fr");
+}
+
 export async function decideLearningProposal(id: string, decision: "APPROVED" | "REJECTED") {
   const admin = await requireAdmin();
   await prisma.learningProposal.update({

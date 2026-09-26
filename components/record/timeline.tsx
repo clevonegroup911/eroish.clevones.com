@@ -5,6 +5,7 @@ import type { RecordEvent, SourceLink, VerificationStatus } from "@prisma/client
 
 import { StatusChip } from "@/components/ui/status-chip";
 import type { Dictionary, Locale } from "@/lib/i18n";
+import { localizeSourceLabel } from "@/lib/source-label";
 
 const FILTERS = ["ALL", "DECISION", "ACTION", "RESULT", "MILESTONE", "LESSON", "PUBLIC_EVENT"] as const;
 
@@ -28,7 +29,7 @@ export function RecordTimeline({
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2 border-b border-rule px-5 py-4 md:px-8" role="tablist" aria-label="Record filters">
+      <div className="flex flex-wrap gap-2 border-b border-rule px-5 py-4 md:px-8" role="tablist" aria-label={dict.record.filtersAria}>
         {FILTERS.map((key) => (
           <button
             key={key}
@@ -67,7 +68,9 @@ export function RecordTimeline({
                 <h2 className="editorial mt-3 text-3xl">
                   {locale === "fr" ? item.titleFr : item.titleEn}
                 </h2>
-                <p className="mt-2 text-sm uppercase tracking-[0.12em] text-muted">{item.kind}</p>
+                <p className="mt-2 text-sm uppercase tracking-[0.12em] text-muted">
+                  {dict.recordKinds[item.kind]}
+                </p>
                 <dl className="mt-6 grid gap-4 md:grid-cols-2">
                   <Field label={dict.record.fields.context} value={locale === "fr" ? item.contextFr : item.contextEn} />
                   <Field label={dict.record.fields.decision} value={locale === "fr" ? item.decisionFr : item.decisionEn} />
@@ -77,7 +80,7 @@ export function RecordTimeline({
                 </dl>
                 <p className="mt-4 text-sm text-muted">
                   {dict.record.fields.evidence}:{" "}
-                  {item.sources.map((source) => source.label).join(" · ") || "—"}
+                  {item.sources.map((source) => localizeSourceLabel(source.label, dict)).join(" · ") || "—"}
                 </p>
               </div>
             </li>

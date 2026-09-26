@@ -7,13 +7,25 @@ import { PrismaClient } from "@prisma/client";
 import argon2 from "argon2";
 
 import { CONFIRMED } from "../lib/identity";
+import { MANDATE_SOURCE_KEY } from "../lib/source-label";
 
 const prisma = new PrismaClient();
 
 const MANDATE_SOURCE = {
-  label: "EJC master mandate — confirmed public facts",
+  label: MANDATE_SOURCE_KEY,
   url: "/docs/CONTENT-NEEDED.md",
   note: "Facts confirmed by the site owner for this platform. Not a third-party citation.",
+};
+
+const NOW_KIND_TITLES: Record<string, { EN: string; FR: string }> = {
+  FOCUS: { EN: "Focus", FR: "Focalisation" },
+  OBJECTIVE: { EN: "Objective", FR: "Objectif" },
+  CHALLENGE: { EN: "Challenge", FR: "Défi" },
+  DECISION: { EN: "Decision", FR: "Décision" },
+  LATEST_ACTION: { EN: "Latest action", FR: "Dernière action" },
+  LATEST_RESULT: { EN: "Latest result", FR: "Dernier résultat" },
+  LATEST_LESSON: { EN: "Latest lesson", FR: "Dernière leçon" },
+  LATEST_SIGNAL: { EN: "Latest signal", FR: "Dernier signal" },
 };
 
 async function main() {
@@ -41,7 +53,7 @@ async function main() {
         birthDate: CONFIRMED.birthDate,
         birthPlace: `${CONFIRMED.birthPlaceCity}, ${CONFIRMED.birthPlaceCountryEn}`,
         rolesLine: CONFIRMED.githubDescription,
-        commandLine: CONFIRMED.commandLine,
+        commandLine: "",
         summary:
           "Congolese entrepreneur, businessman and builder. Founder/CEO. Associated with CLEVONE SARL. The public record states only what can be verified.",
         multiculturalNote:
@@ -61,10 +73,10 @@ async function main() {
         associatedOrg: CONFIRMED.organization,
         birthDate: CONFIRMED.birthDate,
         birthPlace: `${CONFIRMED.birthPlaceCity}, ${CONFIRMED.birthPlaceCountryFr}`,
-        rolesLine: "Entrepreneur, businessman, builder",
-        commandLine: CONFIRMED.commandLine,
+        rolesLine: "Entrepreneur, homme d’affaires, bâtisseur",
+        commandLine: "",
         summary:
-          "Entrepreneur congolais, businessman et builder. Fondateur et CEO. Associé à CLEVONE SARL. Le registre public n’énonce que ce qui peut être vérifié.",
+          "Entrepreneur congolais, homme d’affaires et bâtisseur. Fondateur et CEO. Associé à CLEVONE SARL. Le registre public n’énonce que ce qui peut être vérifié.",
         multiculturalNote:
           "A grandi et vécu dans différents pays, villes et provinces. Les lieux précis hors Kinshasa restent à confirmer.",
         portraitCaption: "Portrait à fournir — placeholder honnête.",
@@ -127,7 +139,7 @@ async function main() {
       slug: "clevone-sarl",
       name: CONFIRMED.organization,
       roleEn: `${CONFIRMED.title} — associated venture, not a product catalogue`,
-      roleFr: `${CONFIRMED.title} — exposition d’un parcours, pas un catalogue`,
+      roleFr: "Fondateur et CEO — exposition d’un parcours, pas un catalogue",
       summaryEn:
         "EJC is Founder/CEO and associated with CLEVONE SARL. This page does not list CLEVONE SARL products or services.",
       summaryFr:
@@ -206,7 +218,7 @@ async function main() {
     {
       slug: "role-founder-ceo",
       claimEn: `Entrepreneur, businessman, builder. ${CONFIRMED.title}. Associated with ${CONFIRMED.organization}.`,
-      claimFr: `Entrepreneur, businessman, builder. ${CONFIRMED.title}. Associé à ${CONFIRMED.organization}.`,
+      claimFr: `Entrepreneur, homme d’affaires, bâtisseur. Fondateur et CEO. Associé à ${CONFIRMED.organization}.`,
       contextEn: "Public role. Not a catalogue of the associated company.",
       contextFr: "Rôle public. Pas un catalogue de l’entreprise associée.",
       evidenceEn: "Confirmed public role and association.",
@@ -249,8 +261,8 @@ async function main() {
           locale,
           title:
             locale === "EN"
-              ? `${kind.replaceAll("_", " ")} — needs confirmation`
-              : `${kind.replaceAll("_", " ")} — à confirmer`,
+              ? `${NOW_KIND_TITLES[kind]?.EN ?? kind} — needs confirmation`
+              : `${NOW_KIND_TITLES[kind]?.FR ?? kind} — à confirmer`,
           body:
             locale === "EN"
               ? "Structured placeholder. No current focus, objective, or result is invented. Edit from admin when EJC confirms a live item and a source."
@@ -357,7 +369,7 @@ async function main() {
         titleEn: "Confirmed identity",
         titleFr: "Identité confirmée",
         bodyEn: `${CONFIRMED.fullName}. Public name ${CONFIRMED.publicName}. Signature ${CONFIRMED.signature}. Congolese entrepreneur, businessman, builder. Founder/CEO. Associated with ${CONFIRMED.organization}. Born in Kinshasa on 1 September 1994.`,
-        bodyFr: `${CONFIRMED.fullName}. Nom public ${CONFIRMED.publicName}. Signature ${CONFIRMED.signature}. Entrepreneur congolais, businessman, builder. Fondateur et CEO. Associé à ${CONFIRMED.organization}. Né à Kinshasa le 1er septembre 1994.`,
+        bodyFr: `${CONFIRMED.fullName}. Nom public ${CONFIRMED.publicName}. Signature ${CONFIRMED.signature}. Entrepreneur congolais, homme d’affaires, bâtisseur. Fondateur et CEO. Associé à ${CONFIRMED.organization}. Né à Kinshasa le 1er septembre 1994.`,
         canonicalUrl: "/en/identity",
         tags: "name identity ejc eroish clevone jeamson founder ceo congolese born kinshasa",
         approved: true,

@@ -8,6 +8,7 @@ const env = {
   DATABASE_URL: process.env.DATABASE_URL ?? "file:./dev.db",
   AUTH_SECRET: process.env.AUTH_SECRET ?? "dev-only-auth-secret-change-before-production-use-32b",
   APP_ORIGIN: process.env.APP_ORIGIN ?? "http://127.0.0.1:3000",
+  SITE_URL: process.env.SITE_URL ?? "https://eroish.clevones.com",
   ADMIN_BOOTSTRAP_EMAIL: process.env.ADMIN_BOOTSTRAP_EMAIL ?? "admin@localhost",
   ADMIN_BOOTSTRAP_PASSWORD: process.env.ADMIN_BOOTSTRAP_PASSWORD ?? "change-this-admin-password",
   PORT: process.env.PORT ?? "3000",
@@ -28,7 +29,7 @@ async function main() {
   await run("npx", ["prisma", "db", "push", "--skip-generate"]);
   await run("npx", ["tsx", "prisma/seed.ts"]);
 
-  const useStart = existsSync(path.join(root, ".next"));
+  const useStart = existsSync(path.join(root, ".next/BUILD_ID"));
   const child = spawn("npx", useStart ? ["next", "start", "-H", "127.0.0.1", "-p", "3000"] : ["next", "dev", "-H", "127.0.0.1", "-p", "3000"], {
     cwd: root,
     env,

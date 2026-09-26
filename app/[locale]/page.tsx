@@ -2,8 +2,10 @@ import Link from "next/link";
 
 import { PortraitPlaceholder } from "@/components/identity/portrait-placeholder";
 import { JourneyChapters } from "@/components/journey/journey-chapters";
-import { CONFIRMED, PLATFORM_CYCLE } from "@/lib/identity";
+import { StatusChip } from "@/components/ui/status-chip";
+import { CONFIRMED } from "@/lib/identity";
 import { getDictionary, isLocale, type Locale } from "@/lib/i18n";
+import { plural } from "@/lib/plural";
 import { getIdentity, getPublishedPlaces, getPublishedProofs, getPublishedVentures } from "@/lib/queries";
 import { prisma } from "@/lib/db";
 
@@ -29,6 +31,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     [dict.nav.challenge, `${prefix}/challenge`],
     [dict.nav.connect, `${prefix}/connect`],
   ] as const;
+  const tagline = identity?.commandLine?.trim() ?? "";
 
   return (
     <>
@@ -41,7 +44,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <p className="mt-6 editorial text-6xl leading-none md:text-8xl">{dict.brand.signature}</p>
             <h1 className="mt-6 editorial text-3xl md:text-5xl">{dict.brand.publicName}</h1>
             <p className="mt-4 text-[0.8rem] uppercase tracking-[0.18em]">{dict.brand.roles}</p>
-            <p className="mt-8 editorial text-2xl md:text-3xl">{dict.brand.command}</p>
+            {tagline ? (
+              <p className="mt-8 editorial text-2xl md:text-3xl">
+                {tagline}{" "}
+                <StatusChip status="NEEDS_CONFIRMATION" locale={locale} />
+              </p>
+            ) : null}
             <p className="mt-8 max-w-xl text-paper/80">{dict.home.notThis}</p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link
@@ -58,7 +66,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               </Link>
             </div>
           </div>
-          <PortraitPlaceholder caption={identity?.portraitCaption ?? dict.home.portraitCaption} />
+          <PortraitPlaceholder
+            caption={identity?.portraitCaption ?? dict.home.portraitCaption}
+            overlay={dict.portrait.overlay}
+            onDark
+          />
         </div>
       </section>
 
@@ -71,21 +83,21 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               {CONFIRMED.publicName} · {CONFIRMED.signature}
             </li>
             <li>
-              {locale === "fr" ? "Congolais" : CONFIRMED.nationality} · {CONFIRMED.title}
+              {dict.home.nationality} · {dict.brand.title}
             </li>
             <li>
-              {locale === "fr" ? "Né à" : "Born in"} {CONFIRMED.birthPlaceCity},{" "}
+              {dict.home.bornIn} {CONFIRMED.birthPlaceCity},{" "}
               {locale === "fr" ? CONFIRMED.birthDateDisplayFr : CONFIRMED.birthDateDisplayEn}
             </li>
             <li>
-              {locale === "fr" ? "Associé à" : "Associated with"} {CONFIRMED.organization}
+              {dict.home.associatedWith} {CONFIRMED.organization}
             </li>
           </ul>
         </div>
         <div>
           <h2 className="editorial text-3xl">{dict.home.unconfirmedTitle}</h2>
           <p className="mt-6 text-lg text-ink-soft">{dict.home.unconfirmedBody}</p>
-          <p className="mt-4 text-sm text-muted">{PLATFORM_CYCLE}</p>
+          <p className="mt-4 text-sm text-muted">{dict.cycles.platform}</p>
         </div>
       </section>
 
@@ -109,10 +121,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           ))}
         </ul>
         <p className="mt-8 text-sm text-muted">
-          {proofs.length} {locale === "fr" ? "preuves publiées" : "published proofs"} · {places.length}{" "}
-          {locale === "fr" ? "lieux confirmés" : "confirmed places"} · {ventures.length}{" "}
-          {locale === "fr" ? "exposition de venture" : "venture exposure"} · {placeholderPlaces.length}{" "}
-          {locale === "fr" ? "lieux à confirmer" : "places awaiting confirmation"}
+          {plural(proofs.length, dict.counts.proofs)} · {plural(places.length, dict.counts.places)} ·{" "}
+          {plural(ventures.length, dict.counts.ventures)} ·{" "}
+          {plural(placeholderPlaces.length, dict.counts.pendingPlaces)}
         </p>
       </section>
     </>

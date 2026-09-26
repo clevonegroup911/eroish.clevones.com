@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
-import fs from "node:fs";
-import path from "node:path";
+
+import { shot } from "./artifacts";
 
 test("admin command center and publishing safety", async ({ page }, testInfo) => {
   if (testInfo.project.name === "mobile") {
@@ -21,11 +21,7 @@ test("admin command center and publishing safety", async ({ page }, testInfo) =>
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Command center" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Now" })).toBeVisible();
-  fs.mkdirSync("/opt/cursor/artifacts", { recursive: true });
-  await page.screenshot({
-    path: path.join("/opt/cursor/artifacts", "admin_command_center.png"),
-    fullPage: true,
-  });
+  await shot(page, "admin_command_center");
 
   await page.goto("/admin/now");
   await expect(page.getByRole("heading", { name: "Now" })).toBeVisible();

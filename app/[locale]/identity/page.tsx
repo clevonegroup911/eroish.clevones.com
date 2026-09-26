@@ -22,15 +22,14 @@ export default async function IdentityPage({ params }: { params: Promise<{ local
           </p>
           <p className="mt-6 text-ink-soft">{identity?.multiculturalNote}</p>
         </div>
-        <PortraitPlaceholder caption={identity?.portraitCaption ?? dict.home.portraitCaption} />
+        <PortraitPlaceholder
+          caption={identity?.portraitCaption ?? dict.home.portraitCaption}
+          overlay={dict.portrait.overlay}
+        />
       </section>
       <section className="border-t border-rule px-5 py-12 md:px-8">
-        <h2 className="editorial text-3xl">{locale === "fr" ? "Ventures — exposition" : "Ventures — exposure"}</h2>
-        <p className="mt-3 max-w-2xl text-ink-soft">
-          {locale === "fr"
-            ? "Pas un catalogue de produits. Un parcours entrepreneurial."
-            : "Not a product catalogue. An entrepreneurial journey."}
-        </p>
+        <h2 className="editorial text-3xl">{dict.identity.venturesTitle}</h2>
+        <p className="mt-3 max-w-2xl text-ink-soft">{dict.identity.venturesLead}</p>
         <ul className="mt-8 grid gap-4">
           {ventures.map((venture) => (
             <li key={venture.id} className="border border-rule p-5">

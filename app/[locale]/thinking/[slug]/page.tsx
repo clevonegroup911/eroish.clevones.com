@@ -28,7 +28,7 @@ export default async function ThinkingItemPage({
         </p>
         {piece.revisions.length ? (
           <p className="mt-8 text-sm text-muted">
-            {locale === "fr" ? "Révisions" : "Revisions"}: {piece.revisions.length}
+            {dict.thinking.revisions}: {piece.revisions.length}
           </p>
         ) : null}
       </article>

@@ -32,6 +32,8 @@ prisma/prisma/
 
 tests/e2e/test-results/
 tests/e2e/report/
+tests/e2e/output/
+tests/e2e/evidence/
 playwright-report/
 blob-report/
 test-results/

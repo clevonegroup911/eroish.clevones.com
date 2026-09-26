@@ -1,10 +1,10 @@
-import { CONFIRMED } from "@/lib/identity";
 import { prisma } from "@/lib/db";
+import { publicSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const origin = process.env.APP_ORIGIN ?? CONFIRMED.siteUrl;
+  const origin = publicSiteUrl();
   const thinking = await prisma.thinkingPiece.findMany({
     where: { publishState: "PUBLISHED" },
     orderBy: { updatedAt: "desc" },

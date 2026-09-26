@@ -9,6 +9,7 @@ describe("confirmed identity", () => {
     expect(CONFIRMED.organization).toBe("CLEVONE SARL");
     expect(Object.keys(CONFIRMED)).not.toContain("netWorth");
     expect(Object.keys(CONFIRMED)).not.toContain("awards");
+    expect(Object.keys(CONFIRMED)).not.toContain("commandLine");
   });
 
   it("emits a Person graph with only confirmed facts", () => {

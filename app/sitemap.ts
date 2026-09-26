@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
-import { CONFIRMED } from "@/lib/identity";
 import { locales } from "@/lib/i18n";
+import { publicSiteUrl } from "@/lib/site-url";
 
 const paths = [
   "",
@@ -23,7 +23,7 @@ const paths = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const origin = process.env.APP_ORIGIN ?? CONFIRMED.siteUrl;
+  const origin = publicSiteUrl();
   const now = new Date();
   return locales.flatMap((locale) =>
     paths.map((path) => ({
