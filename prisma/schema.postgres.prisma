@@ -1,0 +1,13 @@
+// Production copy. Same models as prisma/schema.prisma with a PostgreSQL provider.
+// On the VM, replace the datasource block in prisma/schema.prisma with this one
+// (or generate from this file) before `prisma migrate deploy`.
+// See docs/DEPLOYMENT.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

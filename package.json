@@ -1,0 +1,54 @@
+{
+  "name": "eroish-clevones-com",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Official public identity and authority platform for Eroish J Clevone (EJC).",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma db push --force-reset && tsx prisma/seed.ts",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "argon2": "^0.45.1",
+    "clsx": "^2.1.1",
+    "jose": "^6.2.10",
+    "next": "^15.5.25",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwind-merge": "^3.3.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.1.8",
+    "@types/node": "^22.15.21",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "eslint": "^9.28.0",
+    "eslint-config-next": "^15.3.3",
+    "prisma": "^6.19.3",
+    "tailwindcss": "^4.1.8",
+    "tsx": "^4.23.13",
+    "typescript": "5.8.2",
+    "vitest": "^3.2.4"
+  }
+}
