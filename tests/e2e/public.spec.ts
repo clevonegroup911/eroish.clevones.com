@@ -69,10 +69,50 @@ async function pointActivate(page: Page, locator: Locator, mode: "touch" | "mous
 
 async function assertHomeHeld(page: Page, locale: "fr" | "en", link: Locator) {
   const re = locale === "fr" ? /\/fr\/?$/ : /\/en\/?$/;
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(1000);
   await expect.poll(() => page.url(), { timeout: 1500 }).toMatch(re);
   expect(await outsideLinkClicks(page)).toBe(0);
   expect(await link.getAttribute("data-outside-clicked")).toBeNull();
+}
+
+async function openMenu(menu: Locator) {
+  await menu.evaluate((el) => (el as HTMLButtonElement).click());
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+}
+
+async function closeOnOutside(
+  page: Page,
+  menu: Locator,
+  locale: "fr" | "en",
+  link: Locator,
+  mode: "touch" | "mouse",
+  preserveScroll?: number,
+) {
+  await markOutsideLink(link);
+  await pointActivate(page, link, mode);
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await assertHomeHeld(page, locale, link);
+  if (preserveScroll !== undefined) {
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(preserveScroll - 40);
+  }
+}
+
+function homeTargets(page: Page, locale: "fr" | "en") {
+  const main = page.locator("main");
+  if (locale === "fr") {
+    return {
+      heroRecord: main.getByRole("link", { name: "Entrer dans le registre" }),
+      heroWho: main.getByRole("link", { name: "Qui je suis" }),
+      proofCard: main.locator('a[href$="/proof"]'),
+      footer: page.getByRole("contentinfo").getByRole("link", { name: "Confidentialité" }),
+    };
+  }
+  return {
+    heroRecord: main.getByRole("link", { name: "Enter the record" }),
+    heroWho: main.getByRole("link", { name: "Who I am" }),
+    proofCard: main.locator('a[href$="/proof"]'),
+    footer: page.getByRole("contentinfo").getByRole("link", { name: "Privacy" }),
+  };
 }
 
 test.describe("public identity", () => {
@@ -208,61 +248,37 @@ test.describe("public identity", () => {
     }
   });
 
-  test("mobile menu outside tap on a page link does not navigate", async ({ page }, testInfo) => {
-    if (testInfo.project.name !== "mobile") test.skip();
-    expect(testInfo.project.use.hasTouch).toBeTruthy();
-    expect(testInfo.project.use.isMobile).toBeTruthy();
-    await watchOutsideLinkClicks(page);
-    await page.goto("/fr");
-    const menu = page.locator("button[aria-controls=\"mobile-nav\"]");
-    await menu.click();
-    await expect(menu).toHaveAttribute("aria-expanded", "true");
-    const hero = page.getByRole("link", { name: "Entrer dans le registre" });
-    await expect(hero).toBeVisible();
-    await markOutsideLink(hero);
-    await pointActivate(page, hero, "touch");
-    await expect(menu).toHaveAttribute("aria-expanded", "false");
-    await assertHomeHeld(page, "fr", hero);
+  for (const locale of ["fr", "en"] as const) {
+    for (const mode of ["touch", "mouse"] as const) {
+      test(`mobile menu outside ${mode} on ${locale} page links does not navigate`, async ({ page }, testInfo) => {
+        if (testInfo.project.name !== "mobile") test.skip();
+        expect(testInfo.project.use.hasTouch).toBeTruthy();
+        expect(testInfo.project.use.isMobile).toBeTruthy();
+        await watchOutsideLinkClicks(page);
+        await page.goto(`/${locale}`);
+        const menu = page.locator("button[aria-controls=\"mobile-nav\"]");
+        const targets = homeTargets(page, locale);
 
-    const footer = page.getByRole("contentinfo").getByRole("link", { name: "Confidentialité" });
-    const scrolled = await blurAndScrollIntoView(page, footer);
-    await menu.evaluate((el) => (el as HTMLButtonElement).click());
-    await expect(menu).toHaveAttribute("aria-expanded", "true");
-    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(scrolled - 40);
-    await markOutsideLink(footer);
-    await pointActivate(page, footer, "touch");
-    await expect(menu).toHaveAttribute("aria-expanded", "false");
-    await assertHomeHeld(page, "fr", footer);
-    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(scrolled - 40);
-  });
+        await openMenu(menu);
+        await expect(targets.heroRecord).toBeVisible();
+        await closeOnOutside(page, menu, locale, targets.heroRecord, mode);
 
-  test("mobile menu outside mouse click on a page link does not navigate", async ({ page }, testInfo) => {
-    if (testInfo.project.name !== "mobile") test.skip();
-    expect(testInfo.project.use.hasTouch).toBeTruthy();
-    expect(testInfo.project.use.isMobile).toBeTruthy();
-    await watchOutsideLinkClicks(page);
-    await page.goto("/en");
-    const menu = page.locator("button[aria-controls=\"mobile-nav\"]");
-    await menu.click();
-    await expect(menu).toHaveAttribute("aria-expanded", "true");
-    const hero = page.getByRole("link", { name: "Enter the record" });
-    await expect(hero).toBeVisible();
-    await markOutsideLink(hero);
-    await pointActivate(page, hero, "mouse");
-    await expect(menu).toHaveAttribute("aria-expanded", "false");
-    await assertHomeHeld(page, "en", hero);
+        await openMenu(menu);
+        await expect(targets.heroWho).toBeVisible();
+        await closeOnOutside(page, menu, locale, targets.heroWho, mode);
 
-    const footer = page.getByRole("contentinfo").getByRole("link", { name: "Privacy" });
-    const scrolled = await blurAndScrollIntoView(page, footer);
-    await menu.evaluate((el) => (el as HTMLButtonElement).click());
-    await expect(menu).toHaveAttribute("aria-expanded", "true");
-    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(scrolled - 40);
-    await markOutsideLink(footer);
-    await pointActivate(page, footer, "mouse");
-    await expect(menu).toHaveAttribute("aria-expanded", "false");
-    await assertHomeHeld(page, "en", footer);
-    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(scrolled - 40);
-  });
+        const proofScroll = await blurAndScrollIntoView(page, targets.proofCard);
+        await openMenu(menu);
+        expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(proofScroll - 40);
+        await closeOnOutside(page, menu, locale, targets.proofCard, mode, proofScroll);
+
+        const footerScroll = await blurAndScrollIntoView(page, targets.footer);
+        await openMenu(menu);
+        expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(footerScroll - 40);
+        await closeOnOutside(page, menu, locale, targets.footer, mode, footerScroll);
+      });
+    }
+  }
 
   test("mobile menu link still navigates", async ({ page }, testInfo) => {
     if (testInfo.project.name !== "mobile") test.skip();

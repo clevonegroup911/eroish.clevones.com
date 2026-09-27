@@ -11,10 +11,10 @@ import type { Dictionary, Locale } from "@/lib/i18n";
  * - the toggle (click stays on the button; backdrop is behind the header)
  * - Escape (focus returns to the toggle, preventScroll)
  * - a nav link (then Next navigates)
- * - the full-viewport backdrop (close only): pointerdown preventDefault
- *   keeps the layer mounted through the compatibility click; the menu
- *   closes on that click (and a 500ms capture-phase click guard) so a
- *   touch tap never activates the page underneath.
+ * - the full-viewport backdrop (close only): it stays mounted through
+ *   the whole pointer sequence. pointerdown preventDefault; the menu
+ *   closes on click with preventDefault + stopPropagation so a touch
+ *   compatibility click cannot activate the page underneath.
  * Hidden from `lg` via the wrapper class; the command palette stays available.
  */
 export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }) {
@@ -22,9 +22,7 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
   const [mounted, setMounted] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const guardRef = useRef<{ click?: (event: Event) => void; timer?: number }>({});
   const finishCloseRef = useRef<() => void>(() => {});
-  const armClickGuardRef = useRef<() => void>(() => {});
   const prefix = `/${locale}`;
   const links = [
     [dict.nav.who, `${prefix}/identity`],
@@ -42,45 +40,17 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
     setMounted(true);
   }, []);
 
-  function clearGuard() {
-    if (guardRef.current.click) {
-      document.removeEventListener("click", guardRef.current.click, true);
-    }
-    if (guardRef.current.timer !== undefined) {
-      window.clearTimeout(guardRef.current.timer);
-    }
-    guardRef.current = {};
-  }
-
   function finishClose() {
-    clearGuard();
     setOpen(false);
     buttonRef.current?.focus({ preventScroll: true });
   }
   finishCloseRef.current = finishClose;
-
-  function armClickGuard() {
-    clearGuard();
-    const onClick = (event: Event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      finishCloseRef.current();
-    };
-    guardRef.current.click = onClick;
-    document.addEventListener("click", onClick, true);
-    guardRef.current.timer = window.setTimeout(() => finishCloseRef.current(), 500);
-  }
-  armClickGuardRef.current = armClickGuard;
 
   function isMenuChrome(target: EventTarget | null) {
     if (!(target instanceof Element)) return false;
     if (buttonRef.current?.contains(target)) return true;
     return Boolean(target.closest("#mobile-nav"));
   }
-
-  useEffect(() => {
-    return () => clearGuard();
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -114,18 +84,7 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
       }
     }
 
-    function onPointerDown(event: PointerEvent) {
-      if (isMenuChrome(event.target)) return;
-      const onBackdrop =
-        event.target instanceof Element && event.target.closest("#mobile-nav-backdrop");
-      if (onBackdrop) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      armClickGuardRef.current();
-    }
-
-    function onClick(event: MouseEvent) {
+    function onOutsideClick(event: MouseEvent) {
       if (isMenuChrome(event.target)) return;
       event.preventDefault();
       event.stopPropagation();
@@ -133,12 +92,10 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
     }
 
     document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointerDown, true);
-    document.addEventListener("click", onClick, true);
+    document.addEventListener("click", onOutsideClick, true);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointerDown, true);
-      document.removeEventListener("click", onClick, true);
+      document.removeEventListener("click", onOutsideClick, true);
     };
   }, [open]);
 
@@ -170,7 +127,6 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
               onPointerDown={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                armClickGuard();
               }}
               onClick={(event) => {
                 event.preventDefault();
