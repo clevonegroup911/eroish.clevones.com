@@ -28,10 +28,9 @@ function applySecurity(request: NextRequest, response: NextResponse, nonce: stri
 }
 
 function relativeRedirect(request: NextRequest, location: string, nonce: string, csp: string) {
-  const response = new NextResponse(null, {
-    status: 307,
-    headers: { Location: location },
-  });
+  const target = new URL(location, request.nextUrl);
+  const response = NextResponse.redirect(target);
+  response.headers.set("Location", location);
   return applySecurity(request, response, nonce, csp);
 }
 

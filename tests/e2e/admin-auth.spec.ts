@@ -23,7 +23,8 @@ const ADMIN_PATHS = [
 const LEAK =
   /SEED|Initial seed|Audit log|Contact requests|Command center|admin@localhost|Publish blocked|Learning proposal/i;
 
-test("forged admin cookie does not leak data on any console route", async ({ request }) => {
+test("forged admin cookie does not leak data on any console route", async ({ request }, testInfo) => {
+  if (testInfo.project.name === "mobile") test.skip();
   for (const path of ADMIN_PATHS) {
     const response = await request.get(path, {
       headers: { cookie: "ejc_admin_session=x" },
@@ -40,7 +41,8 @@ test("forged admin cookie does not leak data on any console route", async ({ req
   }
 });
 
-test("forged admin session cannot publish", async ({ request }) => {
+test("forged admin session cannot publish", async ({ request }, testInfo) => {
+  if (testInfo.project.name === "mobile") test.skip();
   const response = await request.post("/admin/now", {
     headers: { cookie: "ejc_admin_session=x" },
     form: { id: "forged" },
