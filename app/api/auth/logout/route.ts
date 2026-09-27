@@ -6,8 +6,16 @@ import { ADMIN_SESSION_COOKIE } from "@/lib/auth";
 import { hashToken } from "@/lib/auth-node";
 import { prisma } from "@/lib/db";
 
-export async function POST() {
-  const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
+function tokenFromCookieHeader(header: string | null): string | undefined {
+  if (!header) return undefined;
+  const match = new RegExp(`(?:^|;\\s*)${ADMIN_SESSION_COOKIE}=([^;]+)`).exec(header);
+  return match?.[1];
+}
+
+export async function POST(request: Request) {
+  const token =
+    tokenFromCookieHeader(request.headers.get("cookie")) ??
+    (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
   const active = await findActiveSession(token);
   if (active) {
     await prisma.session.deleteMany({ where: { id: active.row.id } });

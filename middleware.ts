@@ -28,11 +28,15 @@ function applySecurity(request: NextRequest, response: NextResponse, nonce: stri
   return response;
 }
 
-function rewriteToRelativeRedirect(request: NextRequest, to: string, nonce: string, csp: string) {
+function rewriteToRelativeRedirect(request: NextRequest, to: string, _nonce: string, csp: string) {
   const url = request.nextUrl.clone();
   url.pathname = "/api/redirect";
   url.search = `?to=${encodeURIComponent(to)}`;
-  return applySecurity(request, NextResponse.rewrite(url), nonce, csp);
+  const response = NextResponse.rewrite(url);
+  response.headers.set("Content-Security-Policy", csp);
+  response.headers.set("x-locale", localeFromPath(request.nextUrl.pathname));
+  response.headers.delete("x-nonce");
+  return response;
 }
 
 export async function middleware(request: NextRequest) {
