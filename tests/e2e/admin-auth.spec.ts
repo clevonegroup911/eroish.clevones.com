@@ -50,6 +50,9 @@ test("forged admin session cannot publish", async ({ request }, testInfo) => {
   });
   expect(response.status()).toBeGreaterThanOrEqual(300);
   expect(response.status()).toBeLessThan(400);
+  const location = response.headers().location ?? "";
+  expect(location).toMatch(/^\/admin\/login/);
+  expect(location).not.toMatch(/localhost|https?:\/\//);
   const body = await response.text();
   expect(body).not.toMatch(LEAK);
 });
