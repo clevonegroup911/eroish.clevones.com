@@ -23,16 +23,22 @@ function localeFromPath(pathname: string): string {
 
 function applySecurity(request: NextRequest, response: NextResponse, csp: string) {
   response.headers.set("Content-Security-Policy", csp);
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
   response.headers.set("x-locale", localeFromPath(request.nextUrl.pathname));
   // Next copies request x-nonce onto the response; never set that header.
   response.headers.delete("x-nonce");
+  response.headers.delete("x-request-path");
   return response;
 }
 
+function pathAndSearch(url: URL): string {
+  const query = url.searchParams.toString();
+  return query ? `${url.pathname}?${query}` : url.pathname;
+}
+
 function rewriteToRelativeRedirect(request: NextRequest, to: string, csp: string) {
-  const url = request.nextUrl.clone();
-  url.pathname = "/api/redirect";
-  url.search = `?to=${encodeURIComponent(to)}`;
+  const url = new URL("/api/redirect", request.nextUrl.origin);
+  url.searchParams.set("to", to);
   const response = NextResponse.rewrite(url);
   return applySecurity(request, response, csp);
 }
@@ -45,6 +51,7 @@ export async function middleware(request: NextRequest) {
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-locale", localeFromPath(pathname));
+  requestHeaders.set("x-request-path", pathAndSearch(request.nextUrl));
   // Next 15 reads the script nonce from this request CSP, not from x-nonce.
   requestHeaders.set("Content-Security-Policy", csp);
   requestHeaders.delete("x-nonce");
@@ -76,7 +83,11 @@ export async function middleware(request: NextRequest) {
     const token = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
     const session = token ? await verifyAdminToken(token) : null;
     if (!session) {
-      return rewriteToRelativeRedirect(request, adminLoginPath(pathname), csp);
+      return rewriteToRelativeRedirect(
+        request,
+        adminLoginPath(pathAndSearch(request.nextUrl)),
+        csp,
+      );
     }
     return pass();
   }

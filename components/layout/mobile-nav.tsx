@@ -5,6 +5,15 @@ import { useEffect, useRef, useState } from "react";
 
 import type { Dictionary, Locale } from "@/lib/i18n";
 
+/**
+ * Mobile navigation. Opened by the toggle, closed by:
+ * - the toggle (click, not a pointerdown-outside)
+ * - Escape (focus returns to the toggle)
+ * - a nav link (then Next navigates)
+ * - pointerdown outside the panel and the toggle — close only: the event is
+ *   swallowed so the underlying page is not activated.
+ * Hidden from `lg` via the wrapper class; the command palette stays available.
+ */
 export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -55,8 +64,24 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
       }
     }
 
+    function onPointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (buttonRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      // Close only: swallow the event so the tap does not activate the page.
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+      buttonRef.current?.focus();
+    }
+
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointerDown, true);
+    };
   }, [open]);
 
   return (

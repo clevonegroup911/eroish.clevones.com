@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { findActiveSession } from "@/lib/admin/session";
 import { ADMIN_SESSION_COOKIE } from "@/lib/auth";
+import { adminSessionCookieOptions } from "@/lib/auth-cookie";
 import { hashToken } from "@/lib/auth-node";
 import { prisma } from "@/lib/db";
 
@@ -27,6 +28,6 @@ export async function POST(request: Request) {
     status: 303,
     headers: { Location: "/admin/login" },
   });
-  response.cookies.set(ADMIN_SESSION_COOKIE, "", { path: "/", maxAge: 0 });
+  response.cookies.set(ADMIN_SESSION_COOKIE, "", adminSessionCookieOptions(request, 0));
   return response;
 }

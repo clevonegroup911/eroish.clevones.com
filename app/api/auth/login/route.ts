@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { writeAudit } from "@/lib/audit";
 import { hashToken } from "@/lib/auth-node";
 import { ADMIN_SESSION_COOKIE, signAdminToken } from "@/lib/auth";
+import { adminSessionCookieOptions } from "@/lib/auth-cookie";
 import { prisma } from "@/lib/db";
 import { z } from "@/lib/zod";
 
@@ -52,13 +53,6 @@ export async function POST(request: Request) {
   });
 
   const response = NextResponse.json({ ok: true });
-  const origin = process.env.APP_ORIGIN ?? "";
-  response.cookies.set(ADMIN_SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: origin.startsWith("https:"),
-    path: "/",
-    maxAge: 8 * 60 * 60,
-  });
+  response.cookies.set(ADMIN_SESSION_COOKIE, token, adminSessionCookieOptions(request));
   return response;
 }

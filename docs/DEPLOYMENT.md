@@ -44,6 +44,18 @@ ALLOW_ADMIN_CREATE_IN_PRODUCTION="1"
 
 `APP_ORIGIN` must be `https` in production. `SITE_URL` is the public origin written into sitemap, robots, and metadata (default `https://eroish.clevones.com`). Never commit real secrets.
 
+### Session cookie (`ejc_admin_session`)
+
+`HttpOnly`, `SameSite=lax`, 8 hours, path `/`. Logout clears the cookie with the **same** attributes and deletes the `Session` row.
+
+`Secure` is set only when `NODE_ENV=production` **and** at least one of:
+
+- `X-Forwarded-Proto` (first value) is `https` — Nginx on this VM must send `proxy_set_header X-Forwarded-Proto https;`
+- `COOKIE_SECURE=1` (or `true` / `yes`)
+- `APP_ORIGIN` starts with `https:`
+
+`COOKIE_SECURE=0` forces the flag off. Local `next dev` / `next start` over `http://127.0.0.1` stays non-Secure so login works without TLS.
+
 ## PostgreSQL vs SQLite
 
 The committed Prisma schema uses **SQLite** so local development and CI do not require Postgres.

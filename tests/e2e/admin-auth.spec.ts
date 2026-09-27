@@ -1,4 +1,9 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+
 import { expect, test } from "@playwright/test";
+
+import { OPEN_REDIRECT_PROBES } from "../../lib/safe-relative-path";
 
 const ADMIN_PATHS = [
   "/admin",
@@ -85,4 +90,75 @@ test("logout revokes the session token", async ({ request }, testInfo) => {
   const reusedBody = await reused.text();
   expect(reusedBody).not.toMatch(/Command center|Audit log|Contact requests|Publish blocked|Learning proposal/i);
   expect(reused.headers().location ?? reusedBody).toMatch(/admin\/login|NEXT_REDIRECT;replace;\/admin\/login/);
+});
+
+test("login next= keeps the query string and rejects open redirects", async ({ request, page }, testInfo) => {
+  if (testInfo.project.name === "mobile") test.skip();
+
+  const intercepted = await request.get("/admin/ledger?x=1&y=2", { maxRedirects: 0 });
+  expect(intercepted.status()).toBeGreaterThanOrEqual(300);
+  expect(intercepted.status()).toBeLessThan(400);
+  expect(intercepted.headers().location).toBe("/admin/login?next=%2Fadmin%2Fledger%3Fx%3D1%26y%3D2");
+
+  for (const probe of OPEN_REDIRECT_PROBES) {
+    const encoded = new URLSearchParams({ to: probe }).toString();
+    const response = await request.get(`/api/redirect?${encoded}`, { maxRedirects: 0 });
+    expect(response.status(), probe).toBe(307);
+    expect(response.headers().location, probe).toBe("/");
+  }
+
+  await page.goto("/admin/ledger?x=1&y=2");
+  await expect(page).toHaveURL(/\/admin\/login\?next=/);
+  await page.getByLabel("Email").fill("admin@localhost");
+  await page.getByLabel("Password").fill("change-this-admin-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/admin\/ledger\?x=1&y=2/);
+});
+
+test("security headers include COOP on pages, redirects, API, health, and icon", async ({ request }, testInfo) => {
+  if (testInfo.project.name === "mobile") test.skip();
+  for (const pathName of ["/", "/en", "/fr/connect", "/health", "/icon", "/api/redirect?to=%2Ffr", "/admin/login"]) {
+    const response = await request.get(pathName, { maxRedirects: 0 });
+    expect(response.headers()["cross-origin-opener-policy"], pathName).toBe("same-origin");
+    expect(response.headers()["cross-origin-resource-policy"], pathName).toBeUndefined();
+    const csp = response.headers()["content-security-policy"] ?? "";
+    if (pathName === "/en" || pathName === "/fr/connect") {
+      expect(csp).toMatch(/script-src[^;]*'strict-dynamic'/);
+      expect(csp).toMatch(/script-src[^;]*'nonce-/);
+      expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+    }
+  }
+});
+
+test("production login behind https proto sets Secure on set and clear cookies", async ({ request }, testInfo) => {
+  if (testInfo.project.name === "mobile") test.skip();
+  const production = existsSync(path.join(process.cwd(), ".next/BUILD_ID"));
+  const login = await request.post("/api/auth/login", {
+    headers: { "x-forwarded-proto": "https" },
+    data: {
+      email: "admin@localhost",
+      password: "change-this-admin-password",
+    },
+  });
+  expect(login.ok()).toBeTruthy();
+  const loginCookie = login.headers()["set-cookie"] ?? "";
+  const token = /ejc_admin_session=([^;]+)/.exec(Array.isArray(loginCookie) ? loginCookie.join(";") : loginCookie)?.[1];
+  expect(token).toBeTruthy();
+  if (production) {
+    expect(loginCookie).toMatch(/Secure/i);
+  } else {
+    expect(loginCookie).not.toMatch(/Secure/i);
+  }
+
+  const logout = await request.post("/api/auth/logout", {
+    headers: {
+      "x-forwarded-proto": "https",
+      cookie: `ejc_admin_session=${token}`,
+    },
+    maxRedirects: 0,
+  });
+  const logoutCookie = logout.headers()["set-cookie"] ?? "";
+  if (production) {
+    expect(logoutCookie).toMatch(/Secure/i);
+  }
 });

@@ -97,6 +97,15 @@ test.describe("public identity", () => {
       await expect(page.getByRole("navigation", { name: "Menu" }).getByRole("link", { name: "Qui je suis" })).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(menu).toHaveAttribute("aria-expanded", "false");
+      await menu.click();
+      await expect(menu).toHaveAttribute("aria-expanded", "true");
+      await page.locator("#content").dispatchEvent("pointerdown", { bubbles: true, cancelable: true });
+      await expect(menu).toHaveAttribute("aria-expanded", "false");
+      await expect(page).toHaveURL(/\/fr\/?$/);
+      await menu.click();
+      await expect(menu).toHaveAttribute("aria-expanded", "true");
+      await menu.click();
+      await expect(menu).toHaveAttribute("aria-expanded", "false");
     }
     await shot(
       page,
@@ -116,6 +125,16 @@ test.describe("public identity", () => {
     if (testInfo.project.name !== "mobile") {
       await shot(page, "now_fr");
     }
+  });
+
+  test("mobile menu link still navigates", async ({ page }, testInfo) => {
+    if (testInfo.project.name !== "mobile") test.skip();
+    await page.goto("/fr");
+    const menu = page.locator("button[aria-controls=\"mobile-nav\"]");
+    await menu.click();
+    await page.getByRole("navigation", { name: "Menu" }).getByRole("link", { name: "Qui je suis" }).click();
+    await expect(page).toHaveURL(/\/fr\/identity/);
+    await expect(menu).toHaveAttribute("aria-expanded", "false");
   });
 
   test("SEO surfaces exist", async ({ request }) => {

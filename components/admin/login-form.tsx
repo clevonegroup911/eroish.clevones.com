@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { safeAdminNext } from "@/lib/admin-login-path";
+
 export function AdminLoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -24,7 +26,7 @@ export function AdminLoginForm() {
       setError(true);
       return;
     }
-    router.push(params.get("next") || "/admin");
+    router.push(safeAdminNext(params.get("next")));
     router.refresh();
   }
 
