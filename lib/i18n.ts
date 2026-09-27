@@ -381,7 +381,7 @@ const fr: Dictionary = {
     associatedWith: "Associé à",
     nationality: "Congolais",
     multicultural:
-      "A grandi et vécu dans différents pays, villes et provinces — un fait multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas confirmés.",
+      "A grandi et vécu dans différents pays, villes et provinces — un parcours multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas confirmés.",
   },
   now: {
     title: "Maintenant",
@@ -508,7 +508,7 @@ const fr: Dictionary = {
   },
   places: {
     title: "Lieux",
-    lead: "Né à Kinshasa. A grandi et vécu dans différents pays, villes et provinces — un fait multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas nommés.",
+    lead: "Né à Kinshasa. A grandi et vécu dans différents pays, villes et provinces — un parcours multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas nommés.",
     confirmed: "Confirmé",
     needs: "À confirmer",
     mapCaption: "Schéma, pas à l’échelle. Seuls les lieux confirmés sont indiqués.",

@@ -73,7 +73,8 @@ describe("public copy", () => {
       /grandi et vécu dans différents pays, villes et provinces/,
     );
     expect(getDictionary("fr").home.multicultural).toMatch(/multiculturel/);
-    expect(getDictionary("fr").home.multicultural).not.toMatch(/fait multicultural/);
+    expect(getDictionary("fr").home.multicultural).not.toMatch(/un fait|fait multicultural/);
+    expect(getDictionary("fr").places.lead).not.toMatch(/un fait/);
     expect(getDictionary("en").places.lead).not.toMatch(/Lubumbashi|Paris|London|Brussels/i);
     expect(getDictionary("en").home.multicultural).not.toMatch(/Kid fact|fact\./);
     expect(getDictionary("fr").home.portraitCaption).toMatch(/emplacement réservé honnête/);

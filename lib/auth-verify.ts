@@ -16,7 +16,7 @@ export async function signAdminToken(
   email: string,
   jti: string = crypto.randomUUID(),
 ): Promise<string> {
-  return new SignJWT({ email })
+  return new SignJWT({ email, jti })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(userId)
     .setJti(jti)

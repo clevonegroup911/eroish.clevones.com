@@ -11,7 +11,7 @@ describe("journey chapter badges", () => {
       expect(chapters.builder?.status).toBe("needs");
       expect(chapters.responsibility?.status).toBe("verified");
       expect(chapters.record?.status).toBe("none");
-      expect(chapters.places?.body).not.toMatch(/Kid fact|fact\./);
+      expect(chapters.places?.body).not.toMatch(/Kid fact|fact\.|un fait/);
     }
   });
 });

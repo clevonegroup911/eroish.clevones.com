@@ -28,7 +28,7 @@ export function journeyChapters(locale: Locale): Chapter[] {
         id: "places",
         year: "—",
         title: "Une vie entre les lieux",
-        body: `Né à Kinshasa. ${CONFIRMED.livedAcrossFr} — un fait multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas confirmés.`,
+        body: `Né à Kinshasa. ${CONFIRMED.livedAcrossFr} — un parcours multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas confirmés.`,
         status: "verified",
       },
       {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import localFont from "next/font/local";
 
+import { nonceFromCsp } from "@/lib/csp";
 import { CONFIRMED, personJsonLd } from "@/lib/identity";
 import { defaultLocale, isLocale } from "@/lib/i18n";
 import { publicSiteUrl } from "@/lib/site-url";
@@ -71,14 +72,17 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const headerLocale = (await headers()).get("x-locale") ?? defaultLocale;
+  const headerStore = await headers();
+  const headerLocale = headerStore.get("x-locale") ?? defaultLocale;
   const locale = isLocale(headerLocale) ? headerLocale : defaultLocale;
+  const nonce = nonceFromCsp(headerStore.get("content-security-policy"));
   const jsonLd = personJsonLd(origin);
 
   return (
     <html lang={locale} className={`${plex.variable} ${newsreader.variable}`}>
       <body className="min-h-screen bg-paper text-ink antialiased">
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />

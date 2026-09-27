@@ -79,7 +79,7 @@ async function main() {
         summary:
           "Entrepreneur congolais, homme d’affaires et bâtisseur. Fondateur et CEO. Associé à CLEVONE SARL. Le registre public n’énonce que ce qui peut être vérifié.",
         multiculturalNote:
-          "Né à Kinshasa. A grandi et vécu dans différents pays, villes et provinces — un fait multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas confirmés.",
+          "Né à Kinshasa. A grandi et vécu dans différents pays, villes et provinces — un parcours multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas confirmés.",
         portraitCaption: "Portrait à fournir — emplacement réservé honnête.",
         publishState: "PUBLISHED",
         verification: "VERIFIED",
@@ -383,7 +383,7 @@ async function main() {
         titleEn: "Confirmed origin",
         titleFr: "Origine confirmée",
         bodyEn: `Born in Kinshasa, Democratic Republic of the Congo, on 1 September 1994. Grew up and lived across different countries, cities and provinces as a multicultural, cosmopolitan Third Culture Kid. Other specific places are not confirmed.`,
-        bodyFr: `Né à Kinshasa, République démocratique du Congo, le 1er septembre 1994. A grandi et vécu dans différents pays, villes et provinces — un fait multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas confirmés.`,
+        bodyFr: `Né à Kinshasa, République démocratique du Congo, le 1er septembre 1994. A grandi et vécu dans différents pays, villes et provinces — un parcours multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas confirmés.`,
         canonicalUrl: "/en/places",
         tags: "born kinshasa 1994 origin birthplace drc congo multicultural cosmopolitan third culture kid",
         approved: true,

@@ -21,22 +21,20 @@ function localeFromPath(pathname: string): string {
   return defaultLocale;
 }
 
-function applySecurity(request: NextRequest, response: NextResponse, nonce: string, csp: string) {
+function applySecurity(request: NextRequest, response: NextResponse, csp: string) {
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("x-locale", localeFromPath(request.nextUrl.pathname));
+  // Next copies request x-nonce onto the response; never set that header.
   response.headers.delete("x-nonce");
   return response;
 }
 
-function rewriteToRelativeRedirect(request: NextRequest, to: string, _nonce: string, csp: string) {
+function rewriteToRelativeRedirect(request: NextRequest, to: string, csp: string) {
   const url = request.nextUrl.clone();
   url.pathname = "/api/redirect";
   url.search = `?to=${encodeURIComponent(to)}`;
   const response = NextResponse.rewrite(url);
-  response.headers.set("Content-Security-Policy", csp);
-  response.headers.set("x-locale", localeFromPath(request.nextUrl.pathname));
-  response.headers.delete("x-nonce");
-  return response;
+  return applySecurity(request, response, csp);
 }
 
 export async function middleware(request: NextRequest) {
@@ -47,20 +45,13 @@ export async function middleware(request: NextRequest) {
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-locale", localeFromPath(pathname));
+  // Next 15 reads the script nonce from this request CSP, not from x-nonce.
   requestHeaders.set("Content-Security-Policy", csp);
-  const documentRoute =
-    !pathname.startsWith("/api") &&
-    !pathname.startsWith("/_next") &&
-    pathname !== "/health" &&
-    pathname !== "/favicon.ico";
-  if (documentRoute) {
-    requestHeaders.set("x-nonce", nonce);
-  }
+  requestHeaders.delete("x-nonce");
 
   const pass = () => {
     const response = NextResponse.next({ request: { headers: requestHeaders } });
-    response.headers.delete("x-nonce");
-    return applySecurity(request, response, nonce, csp);
+    return applySecurity(request, response, csp);
   };
 
   if (
@@ -85,7 +76,7 @@ export async function middleware(request: NextRequest) {
     const token = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
     const session = token ? await verifyAdminToken(token) : null;
     if (!session) {
-      return rewriteToRelativeRedirect(request, adminLoginPath(pathname), nonce, csp);
+      return rewriteToRelativeRedirect(request, adminLoginPath(pathname), csp);
     }
     return pass();
   }
@@ -97,7 +88,7 @@ export async function middleware(request: NextRequest) {
 
   const locale = negotiateLocale(request.headers.get("accept-language")) || defaultLocale;
   const suffix = pathname === "/" ? "" : pathname;
-  return rewriteToRelativeRedirect(request, `/${locale}${suffix}`, nonce, csp);
+  return rewriteToRelativeRedirect(request, `/${locale}${suffix}`, csp);
 }
 
 export const config = {

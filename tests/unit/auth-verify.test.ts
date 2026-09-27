@@ -19,6 +19,8 @@ describe("verifyAdminToken", () => {
 
   it("accepts a freshly signed token", async () => {
     const token = await signAdminToken("user-1", "admin@localhost", "session-1");
+    const payload = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString());
+    expect(payload.jti).toBe("session-1");
     await expect(verifyAdminToken(token)).resolves.toEqual({
       userId: "user-1",
       email: "admin@localhost",
