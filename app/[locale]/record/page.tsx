@@ -1,0 +1,21 @@
+import { PageIntro } from "@/components/layout/page-shell";
+import { RecordTimeline } from "@/components/record/timeline";
+import { localeContext, sectionMetadata } from "@/lib/locale-page";
+import { getPublishedRecord } from "@/lib/queries";
+
+
+export function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  return sectionMetadata(params, (dict) => ({ title: dict.record.title, description: dict.record.lead }));
+}
+
+export default async function RecordPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale, dict } = await localeContext(params);
+  const items = await getPublishedRecord();
+
+  return (
+    <>
+      <PageIntro title={dict.record.title} lead={dict.record.lead} />
+      <RecordTimeline locale={locale} dict={dict} items={items} />
+    </>
+  );
+}

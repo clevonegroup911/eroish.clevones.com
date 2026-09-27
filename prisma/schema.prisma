@@ -1,0 +1,591 @@
+// Local / CI / tests use SQLite (DATABASE_URL=file:./dev.db, next to this schema).
+// Production on the Nginx VM should switch the provider to postgresql
+// and point DATABASE_URL at PostgreSQL — see docs/DEPLOYMENT.md.
+// Do not invent biographical facts in this schema or in seed data.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Locale {
+  EN
+  FR
+}
+
+enum VerificationStatus {
+  DECLARED
+  DOCUMENTED
+  VERIFIED
+  IN_PROGRESS
+  UPDATED
+  CORRECTED
+  NEEDS_CONFIRMATION
+}
+
+enum PublishState {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum RecordKind {
+  DECISION
+  ACTION
+  RESULT
+  MILESTONE
+  LESSON
+  PUBLIC_EVENT
+}
+
+enum NowKind {
+  FOCUS
+  OBJECTIVE
+  CHALLENGE
+  DECISION
+  LATEST_ACTION
+  LATEST_RESULT
+  LATEST_LESSON
+  LATEST_SIGNAL
+}
+
+enum CommitmentState {
+  COMMITTED
+  IN_PROGRESS
+  DELIVERED
+  CHANGED
+  CANCELLED
+  FAILED_LEARNED
+}
+
+enum ThinkingCategory {
+  SEEING
+  THINKING
+  QUESTIONING
+  LEARNING
+  DECIDING
+  CHANGED_MIND
+}
+
+enum ThinkingFormat {
+  SIGNAL
+  ESSAY
+  THESIS
+  NOTE
+  REFLECTION
+  LETTER
+  PREDICTION
+  RETROSPECTIVE
+}
+
+enum SignalType {
+  OBSERVATION
+  DECISION
+  QUESTION
+  LESSON
+  UPDATE
+  IDEA
+}
+
+enum ConnectIntent {
+  BUSINESS
+  INTRODUCTION
+  INVITATION
+  MEDIA
+  IDEA
+  OPPORTUNITY
+  MEETING
+  OTHER
+}
+
+enum PlaceConfirmation {
+  CONFIRMED
+  NEEDS_CONFIRMATION
+}
+
+enum ChallengeKind {
+  QUESTION
+  CHALLENGE
+  EVIDENCE
+  COUNTERARGUMENT
+}
+
+enum ChallengeModeration {
+  PENDING
+  APPROVED
+  REJECTED
+  RESPONDED
+}
+
+enum LearningProposalStatus {
+  PROPOSED
+  APPROVED
+  REJECTED
+  REVERTED
+}
+
+enum ExampleFlag {
+  LIVE
+  EXAMPLE
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+  sessions     Session[]
+  auditLogs    AuditLog[]
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  userId    String
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+}
+
+model IdentityProfile {
+  id                String             @id @default(cuid())
+  locale            Locale
+  fullName          String
+  publicName        String
+  signature         String
+  nationality       String
+  title             String
+  associatedOrg     String
+  birthDate         String
+  birthPlace        String
+  rolesLine         String
+  commandLine       String
+  summary           String
+  multiculturalNote String
+  portraitCaption   String
+  publishState      PublishState       @default(PUBLISHED)
+  verification      VerificationStatus @default(VERIFIED)
+  exampleFlag       ExampleFlag        @default(LIVE)
+  updatedAt         DateTime           @updatedAt
+  revisions         ContentRevision[]
+}
+
+model Place {
+  id            String             @id @default(cuid())
+  slug          String             @unique
+  nameEn        String
+  nameFr        String
+  countryEn     String?
+  countryFr     String?
+  kind          String
+  lat           Float?
+  lng           Float?
+  confirmation  PlaceConfirmation
+  noteEn        String
+  noteFr        String
+  sortOrder     Int                @default(0)
+  publishState  PublishState       @default(DRAFT)
+  verification  VerificationStatus @default(NEEDS_CONFIRMATION)
+  exampleFlag   ExampleFlag        @default(LIVE)
+  sources       SourceLink[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  revisions     ContentRevision[]
+}
+
+model Venture {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  name         String
+  roleEn       String
+  roleFr       String
+  summaryEn    String
+  summaryFr    String
+  exposureOnly Boolean            @default(true)
+  startDate    String?
+  publishState PublishState       @default(DRAFT)
+  verification VerificationStatus @default(NEEDS_CONFIRMATION)
+  exampleFlag  ExampleFlag        @default(LIVE)
+  sources      SourceLink[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  revisions    ContentRevision[]
+}
+
+model Achievement {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  titleEn      String
+  titleFr      String
+  bodyEn       String
+  bodyFr       String
+  occurredOn   String?
+  publishState PublishState       @default(DRAFT)
+  verification VerificationStatus @default(NEEDS_CONFIRMATION)
+  exampleFlag  ExampleFlag        @default(EXAMPLE)
+  sources      SourceLink[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  revisions    ContentRevision[]
+}
+
+model MediaItem {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  titleEn      String
+  titleFr      String
+  outletEn     String
+  outletFr     String
+  url          String?
+  publishedOn  String?
+  summaryEn    String
+  summaryFr    String
+  publishState PublishState       @default(DRAFT)
+  verification VerificationStatus @default(NEEDS_CONFIRMATION)
+  exampleFlag  ExampleFlag        @default(EXAMPLE)
+  sources      SourceLink[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  revisions    ContentRevision[]
+}
+
+model NowItem {
+  id           String             @id @default(cuid())
+  kind         NowKind
+  locale       Locale
+  title        String
+  body         String
+  occurredOn   String?
+  version      Int                @default(1)
+  publishState PublishState       @default(DRAFT)
+  verification VerificationStatus @default(NEEDS_CONFIRMATION)
+  exampleFlag  ExampleFlag        @default(EXAMPLE)
+  sources      SourceLink[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  revisions    ContentRevision[]
+
+  @@index([kind, locale])
+}
+
+model RecordEvent {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  kind         RecordKind
+  year         Int?
+  occurredOn   String?
+  titleEn      String
+  titleFr      String
+  contextEn    String
+  contextFr    String
+  decisionEn   String
+  decisionFr   String
+  actionEn     String
+  actionFr     String
+  resultEn     String
+  resultFr     String
+  lessonEn     String
+  lessonFr     String
+  publishState PublishState       @default(DRAFT)
+  verification VerificationStatus @default(NEEDS_CONFIRMATION)
+  exampleFlag  ExampleFlag        @default(LIVE)
+  proofs       ProofItem[]
+  sources      SourceLink[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  revisions    ContentRevision[]
+}
+
+model ProofItem {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  claimEn      String
+  claimFr      String
+  contextEn    String
+  contextFr    String
+  evidenceEn   String
+  evidenceFr    String
+  occurredOn   String?
+  lastUpdateOn String?
+  relatedRecordId String?
+  relatedRecord   RecordEvent?    @relation(fields: [relatedRecordId], references: [id])
+  publishState PublishState       @default(DRAFT)
+  verification VerificationStatus @default(NEEDS_CONFIRMATION)
+  exampleFlag  ExampleFlag        @default(LIVE)
+  sources      SourceLink[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  revisions    ContentRevision[]
+}
+
+model SourceLink {
+  id            String        @id @default(cuid())
+  label         String
+  url           String?
+  note          String?
+  isApprovedAsk Boolean       @default(false)
+  placeId       String?
+  place         Place?        @relation(fields: [placeId], references: [id])
+  ventureId     String?
+  venture       Venture?      @relation(fields: [ventureId], references: [id])
+  achievementId String?
+  achievement   Achievement?  @relation(fields: [achievementId], references: [id])
+  mediaId       String?
+  media         MediaItem?    @relation(fields: [mediaId], references: [id])
+  nowItemId     String?
+  nowItem       NowItem?      @relation(fields: [nowItemId], references: [id])
+  recordId      String?
+  record        RecordEvent?  @relation(fields: [recordId], references: [id])
+  proofId       String?
+  proof         ProofItem?    @relation(fields: [proofId], references: [id])
+  commitmentId  String?
+  commitment    LedgerCommitment? @relation(fields: [commitmentId], references: [id])
+  thinkingId    String?
+  thinking      ThinkingPiece? @relation(fields: [thinkingId], references: [id])
+  thesisId      String?
+  thesis        Thesis?       @relation(fields: [thesisId], references: [id])
+  askSourceId   String?
+  askSource     AskSource?    @relation(fields: [askSourceId], references: [id])
+  createdAt     DateTime      @default(now())
+}
+
+model LedgerCommitment {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  titleEn      String
+  titleFr      String
+  bodyEn       String
+  bodyFr       String
+  state        CommitmentState    @default(COMMITTED)
+  previousState CommitmentState?
+  changeNoteEn String?
+  changeNoteFr String?
+  committedOn  String?
+  publishState PublishState       @default(DRAFT)
+  verification VerificationStatus @default(NEEDS_CONFIRMATION)
+  exampleFlag  ExampleFlag        @default(EXAMPLE)
+  sources      SourceLink[]
+  history      CommitmentHistory[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  revisions    ContentRevision[]
+}
+
+model CommitmentHistory {
+  id           String           @id @default(cuid())
+  commitmentId String
+  commitment   LedgerCommitment @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  fromState    CommitmentState?
+  toState      CommitmentState
+  noteEn       String
+  noteFr       String
+  changedAt    DateTime         @default(now())
+}
+
+model ThinkingPiece {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  category     ThinkingCategory
+  format       ThinkingFormat
+  titleEn      String
+  titleFr      String
+  bodyEn       String
+  bodyFr       String
+  publishedOn  String?
+  publishState PublishState       @default(DRAFT)
+  verification VerificationStatus @default(NEEDS_CONFIRMATION)
+  exampleFlag  ExampleFlag        @default(EXAMPLE)
+  sources      SourceLink[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  revisions    ContentRevision[]
+}
+
+model Thesis {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  titleEn      String
+  titleFr      String
+  bodyEn       String
+  bodyFr       String
+  version      Int                @default(1)
+  open         Boolean            @default(true)
+  publishState PublishState       @default(DRAFT)
+  verification VerificationStatus @default(NEEDS_CONFIRMATION)
+  exampleFlag  ExampleFlag        @default(EXAMPLE)
+  sources      SourceLink[]
+  versions     ThesisVersion[]
+  challenges   ChallengeEntry[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  revisions    ContentRevision[]
+}
+
+model ThesisVersion {
+  id        String   @id @default(cuid())
+  thesisId  String
+  thesis    Thesis   @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+  version   Int
+  titleEn   String
+  titleFr   String
+  bodyEn    String
+  bodyFr    String
+  noteEn    String
+  noteFr    String
+  createdAt DateTime @default(now())
+}
+
+model ChallengeEntry {
+  id          String              @id @default(cuid())
+  thesisId    String
+  thesis      Thesis              @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+  kind        ChallengeKind
+  name        String
+  organization String?
+  body        String
+  moderation  ChallengeModeration @default(PENDING)
+  ejcResponse String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model SignalPost {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  type         SignalType
+  locale       Locale
+  body         String
+  publishedOn  String?
+  publishState PublishState       @default(DRAFT)
+  verification VerificationStatus @default(NEEDS_CONFIRMATION)
+  exampleFlag  ExampleFlag        @default(EXAMPLE)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  revisions    ContentRevision[]
+}
+
+model AskSource {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  titleEn      String
+  titleFr      String
+  bodyEn       String
+  bodyFr       String
+  canonicalUrl String
+  tags         String             @default("")
+  approved     Boolean            @default(true)
+  publishState PublishState       @default(PUBLISHED)
+  verification VerificationStatus @default(VERIFIED)
+  exampleFlag  ExampleFlag        @default(LIVE)
+  links        SourceLink[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+model ConnectRequest {
+  id           String         @id @default(cuid())
+  intent       ConnectIntent
+  name         String
+  organization String
+  email        String
+  reason       String
+  context      String
+  whyEjc       String
+  requestedAction String
+  supporting   String
+  honeypot     String         @default("")
+  ipHash       String
+  status       String         @default("NEW")
+  createdAt    DateTime       @default(now())
+}
+
+model LearningProposal {
+  id           String                 @id @default(cuid())
+  title        String
+  rationale    String
+  recommendation String
+  status       LearningProposalStatus @default(PROPOSED)
+  reversible   Boolean                @default(true)
+  approvedBy   String?
+  decidedAt    DateTime?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  name      String
+  path      String
+  locale    String?
+  meta      String   @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
+}
+
+model RateLimitEntry {
+  id        String   @id @default(cuid())
+  key       String
+  count     Int      @default(1)
+  windowStart DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([key, windowStart])
+}
+
+model AuditLog {
+  id        String     @id @default(cuid())
+  actorId   String?
+  actor     AdminUser? @relation(fields: [actorId], references: [id])
+  action    String
+  entity    String
+  entityId  String
+  summary   String
+  payload   String     @default("{}")
+  createdAt DateTime   @default(now())
+
+  @@index([entity, entityId])
+}
+
+model ContentRevision {
+  id          String            @id @default(cuid())
+  entity      String
+  entityId    String
+  version     Int
+  snapshot    String
+  note        String            @default("")
+  identityId  String?
+  identity    IdentityProfile?  @relation(fields: [identityId], references: [id])
+  placeId     String?
+  place       Place?            @relation(fields: [placeId], references: [id])
+  ventureId   String?
+  venture     Venture?          @relation(fields: [ventureId], references: [id])
+  achievementId String?
+  achievement Achievement?      @relation(fields: [achievementId], references: [id])
+  mediaId     String?
+  media       MediaItem?        @relation(fields: [mediaId], references: [id])
+  nowItemId   String?
+  nowItem     NowItem?          @relation(fields: [nowItemId], references: [id])
+  recordId    String?
+  record      RecordEvent?      @relation(fields: [recordId], references: [id])
+  proofId     String?
+  proof       ProofItem?        @relation(fields: [proofId], references: [id])
+  commitmentId String?
+  commitment  LedgerCommitment? @relation(fields: [commitmentId], references: [id])
+  thinkingId  String?
+  thinking    ThinkingPiece?    @relation(fields: [thinkingId], references: [id])
+  thesisId    String?
+  thesis      Thesis?           @relation(fields: [thesisId], references: [id])
+  signalId    String?
+  signal      SignalPost?       @relation(fields: [signalId], references: [id])
+  createdAt   DateTime          @default(now())
+
+  @@index([entity, entityId])
+}

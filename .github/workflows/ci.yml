@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DATABASE_URL: file:./dev.db
+  AUTH_SECRET: ci-only-auth-secret-not-for-production-use-32b
+  APP_ORIGIN: http://127.0.0.1:3000
+  E2E_ORIGIN: http://127.0.0.1:3100
+  SITE_URL: https://eroish.clevones.com
+  ADMIN_BOOTSTRAP_EMAIL: admin@localhost
+  ADMIN_BOOTSTRAP_PASSWORD: change-this-admin-password
+  CI: true
+
+jobs:
+  quality:
+    name: quality
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Prepare database
+        run: npx prisma db push && npx tsx prisma/seed.ts
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run test:e2e
