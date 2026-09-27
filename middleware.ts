@@ -10,7 +10,6 @@ import {
 import { verifyAdminToken } from "@/lib/auth-verify";
 import { buildCsp } from "@/lib/csp";
 import { defaultLocale, isLocale, negotiateLocale } from "@/lib/i18n";
-import { buildRedirectLocation } from "@/lib/request-redirect";
 
 const PUBLIC_FILE = /\.(.*)$/;
 
@@ -28,15 +27,11 @@ function applySecurity(request: NextRequest, response: NextResponse, nonce: stri
   return response;
 }
 
-function redirectUsingRequest(request: NextRequest, pathname: string, search: string, nonce: string, csp: string) {
-  const location = buildRedirectLocation({
-    pathname,
-    search,
-    host: request.headers.get("host"),
-    protocol: request.nextUrl.protocol,
-    appOrigin: process.env.APP_ORIGIN,
-  });
-  return applySecurity(request, NextResponse.redirect(location), nonce, csp);
+function rewriteToRelativeRedirect(request: NextRequest, to: string, nonce: string, csp: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = "/api/redirect";
+  url.search = `?to=${encodeURIComponent(to)}`;
+  return applySecurity(request, NextResponse.rewrite(url), nonce, csp);
 }
 
 export async function middleware(request: NextRequest) {
@@ -81,7 +76,7 @@ export async function middleware(request: NextRequest) {
     const session = token ? await verifyAdminToken(token) : null;
     if (!session) {
       const next = encodeURIComponent(pathname);
-      return redirectUsingRequest(request, "/admin/login", `?next=${next}`, nonce, csp);
+      return rewriteToRelativeRedirect(request, `/admin/login?next=${next}`, nonce, csp);
     }
     return pass();
   }
@@ -93,7 +88,7 @@ export async function middleware(request: NextRequest) {
 
   const locale = negotiateLocale(request.headers.get("accept-language")) || defaultLocale;
   const suffix = pathname === "/" ? "" : pathname;
-  return redirectUsingRequest(request, `/${locale}${suffix}`, "", nonce, csp);
+  return rewriteToRelativeRedirect(request, `/${locale}${suffix}`, nonce, csp);
 }
 
 export const config = {

@@ -33,8 +33,8 @@ test("forged admin cookie does not leak data on any console route", async ({ req
     expect(response.status(), path).toBeGreaterThanOrEqual(300);
     expect(response.status(), path).toBeLessThan(400);
     const location = response.headers().location ?? "";
-    expect(location, path).toMatch(/\/admin\/login/);
-    expect(location, path).not.toMatch(/localhost/);
+    expect(location, path).toMatch(/^\/admin\/login/);
+    expect(location, path).not.toMatch(/localhost|https?:\/\//);
     const body = await response.text();
     expect(body, path).not.toMatch(LEAK);
     expect(body.length, path).toBeLessThan(800);
