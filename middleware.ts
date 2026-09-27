@@ -47,16 +47,21 @@ export async function middleware(request: NextRequest) {
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-locale", localeFromPath(pathname));
-  requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);
+  const documentRoute =
+    !pathname.startsWith("/api") &&
+    !pathname.startsWith("/_next") &&
+    pathname !== "/health" &&
+    pathname !== "/favicon.ico";
+  if (documentRoute) {
+    requestHeaders.set("x-nonce", nonce);
+  }
 
-  const pass = () =>
-    applySecurity(
-      request,
-      NextResponse.next({ request: { headers: requestHeaders } }),
-      nonce,
-      csp,
-    );
+  const pass = () => {
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    response.headers.delete("x-nonce");
+    return applySecurity(request, response, nonce, csp);
+  };
 
   if (
     pathname.startsWith("/_next") ||
