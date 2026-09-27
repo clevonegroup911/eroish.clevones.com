@@ -24,7 +24,7 @@ test.describe("public identity", () => {
 
     await page.goto("/en/journey");
     await expect(page.getByRole("heading", { name: "Journey" })).toBeVisible();
-    await expect(page.getByText("Born in Kinshasa")).toBeVisible();
+    await expect(page.getByText(/Born in Kinshasa/).first()).toBeVisible();
     await expect(
       page.getByText(/Grew up and lived across different countries, cities and provinces/).first(),
     ).toBeVisible();
