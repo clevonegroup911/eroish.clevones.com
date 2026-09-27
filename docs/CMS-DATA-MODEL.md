@@ -4,7 +4,7 @@ Baseline: `prisma/schema.prisma` (SQLite, full models) and stub `prisma/schema.p
 
 <!-- cms-canonical
 roles: SUPER_ADMIN, ADMIN, EDITOR, AUTHOR, REVIEWER, MEDIA_MANAGER
-capabilities: content.create, content.edit, content.review, content.publish, content.delete, media.upload, media.delete, users.manage, roles.manage, settings.manage, audit.read
+capabilities: content.create, content.edit, content.review, content.publish, content.delete, content.verify, media.upload, media.delete, users.manage, roles.manage, settings.manage, audit.read
 workflow: DRAFT, IN_REVIEW, APPROVED, SCHEDULED, PUBLISHED, UNPUBLISHED, ARCHIVED
 truth: VERIFIED, UNVERIFIED, TO_CONFIRM, PRIVATE
 -->
@@ -19,7 +19,7 @@ truth: VERIFIED, UNVERIFIED, TO_CONFIRM, PRIVATE
 
 | Environment | Today (PR #1) | CMS-02 onward |
 |---|---|---|
-| Local Fedora / laptop | SQLite `file:./dev.db` next to `prisma/schema.prisma` (`lib/db.ts` also sets `PRAGMA busy_timeout`) | PostgreSQL 15 via `docker compose` (proposed service `postgres:15`, db `eroish_dev`) |
+| Local Fedora / laptop | SQLite `file:./dev.db` next to `prisma/schema.prisma` (`lib/db.ts` also sets `PRAGMA busy_timeout` via `$executeRawUnsafe`) | PostgreSQL 15 via **Podman** (`podman-compose`) by default; `docker compose` is an alternative (`postgres:15`, db `eroish_dev`) |
 | GitHub Actions | `DATABASE_URL: file:./dev.db` in `.github/workflows/ci.yml` | `services: postgres:15` + `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eroish_ci` |
 | Production VM | Documented switch to `postgresql` + `eroish_prod`; **no production data yet** | Same; first real migration history is created in CMS-02 |
 
@@ -27,7 +27,7 @@ truth: VERIFIED, UNVERIFIED, TO_CONFIRM, PRIVATE
 
 **Consequences.**
 
-- Fedora local validation must run Docker (or install Postgres 15). Compose file is a CMS-02 deliverable.
+- Fedora local validation must run **Podman** (or Docker, or install Postgres 15). Compose/`podman-compose` file is a CMS-02 deliverable.
 - CI quality job gains a service container and a wait-for-healthy step; `prisma migrate deploy` (or `migrate dev` in generate) replaces `db push` for schema apply.
 - `lib/db.ts` SQLite `PRAGMA` becomes a no-op / is removed.
 - Existing unit tests that do not touch Prisma stay unchanged. Tests that construct `AskSource` objects (`tests/unit/ask-ejc.test.ts`) stay valid if new fields are optional or the helper is updated in CMS-02 **with** the schema — not in CMS-01.
@@ -98,6 +98,7 @@ enum Visibility {
 enum RelationType {
   FOUNDED
   LEADS
+  BORN_IN
   LIVED_IN
   INVOLVED_IN
   BELONGS_TO
@@ -170,7 +171,15 @@ enum FieldKind {
 | `NEEDS_CONFIRMATION` | `TO_CONFIRM` |
 | *(none)* | `PRIVATE` (new; also set `visibility = PRIVATE`) |
 
-`publishingSafetyCheck` grows a `truthStatus` field: public `PUBLISHED` requires `truthStatus === VERIFIED`, sources, `exampleFlag !== EXAMPLE`, `visibility === PUBLIC`. `PRIVATE` cannot become a public `PUBLISHED` fact. The function still does **not** mutate truth.
+**Visibility vs label (D1).** Public reachability is `workflowState = PUBLISHED` AND `visibility = PUBLIC` AND `deletedAt IS NULL` AND `truthStatus != PRIVATE`. `truthStatus` is the **label** (`VERIFIED` as fact; `UNVERIFIED` / `TO_CONFIRM` as “à confirmer / to confirm”), never a visibility switch. Mandate §19 requires a public unverified/to-confirm Ask tier.
+
+`publishingSafetyCheck` is extended, not inverted:
+
+- It still **never mutates** `truthStatus` / `verification`.
+- `EXAMPLE` still cannot be published **as fact**.
+- `PRIVATE` cannot be `visibility = PUBLIC`.
+- Biography / identity claims that are not `VERIFIED` may be `PUBLISHED` only if every public surface (and Ask) renders the explicit to-confirm label. They cannot be published as unlabelled fact (that is the existing unverified-as-fact block).
+- Setting `truthStatus = VERIFIED` is a separate `content.verify` action (SUPER_ADMIN; biography always SUPER_ADMIN), requires at least one `ProvenanceSource` or `OWNER_CONFIRMED` attestation, writes `verifiedById` / `verifiedAt` / `verificationNote`, and is audited.
 
 ### 4.3 Auth (compatible with existing session)
 
@@ -202,7 +211,7 @@ model Session {
 }
 ```
 
-Seed/bootstrap user (today `admin@localhost`) is assigned `SUPER_ADMIN` on migrate. `requireAdmin()` stays; `requireCapability(cap)` (CMS-02/04) reads `role` and the matrix in `docs/CMS-SECURITY.md`. JWT payload does **not** need to embed capabilities (avoids stale grants); look up the user row as today.
+Seed/bootstrap user (today `admin@localhost`) is assigned `SUPER_ADMIN` on migrate. `requireAdmin()` stays; `requireCapability(cap)` lands in **CMS-04** and reads `role` plus the matrix in `docs/CMS-SECURITY.md`. JWT payload does **not** embed capabilities (avoids stale grants); look up the user row as today. An ADMIN cannot grant, disable, or downgrade a SUPER_ADMIN. The last SUPER_ADMIN cannot be removed.
 
 Optional later (not required for CMS-02): `CapabilityOverride` for per-user extras. Default is role→capabilities only.
 
@@ -211,25 +220,36 @@ Optional later (not required for CMS-02): `CapabilityOverride` for per-user extr
 Every native editorial model receives (additive):
 
 ```prisma
+  nodeId         String
+  node           ContentNode    @relation(fields: [nodeId], references: [id], onDelete: Restrict)
   workflowState  WorkflowState  @default(DRAFT)
   truthStatus    TruthStatus    @default(TO_CONFIRM)
-  visibility     Visibility     @default(PUBLIC)
+  visibility     Visibility     @default(PRIVATE)
   exampleFlag    ExampleFlag    @default(LIVE)
   approvedForAsk Boolean        @default(false)
+  verifiedById   String?
+  verifiedBy     AdminUser?     @relation("VerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+  verifiedAt     DateTime?
+  verificationNote String       @default("")
   scheduledAt    DateTime?
   publishedAt    DateTime?
   unpublishedAt  DateTime?
   archivedAt     DateTime?
   deletedAt      DateTime?
   authorId       String?
-  author         AdminUser?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  author         AdminUser?     @relation("Authored", fields: [authorId], references: [id], onDelete: SetNull)
   editorId       String?
+  editor         AdminUser?     @relation("Edited", fields: [editorId], references: [id], onDelete: SetNull)
   reviewerId     String?
+  reviewer       AdminUser?     @relation("Reviewed", fields: [reviewerId], references: [id], onDelete: SetNull)
   publisherId    String?
+  publisher      AdminUser?     @relation("Published", fields: [publisherId], references: [id], onDelete: SetNull)
   submittedAt    DateTime?
   reviewedAt     DateTime?
   // existing publishState + verification retained until CMS-12 cutover
 ```
+
+Schema **defaults** are safe (D4): `DRAFT`, `TO_CONFIRM`, `approvedForAsk false`, `visibility PRIVATE`. Migration sets live values explicitly for already-`CONFIRMED` seed rows (`PUBLISHED` / `VERIFIED` / `PUBLIC` / `approvedForAsk` only where today’s Ask sources are approved). `onDelete: SetNull` on author/editor/reviewer/publisher/verifiedBy so a user soft-delete cannot cascade-wipe content. `AuditLog.actor` stays Restrict — do not hard-delete users who have audit rows.
 
 Composite index on each:
 
@@ -238,7 +258,41 @@ Composite index on each:
   @@index([visibility, approvedForAsk, deletedAt])
 ```
 
-`onDelete: SetNull` on author/editor/reviewer/publisher so deleting (soft) a user cannot cascade-wipe content. `AuditLog.actor` stays optional; default FK restrict — do not hard-delete users who have audit rows (soft-delete only).
+### 4.4b ContentNode registry (polymorphic links)
+
+**Choice (D5): a central `ContentNode` with real FKs.** `TermBinding`, `ContentProvenance`, `TypedRelation`, `WorkflowEvent`, `SeoMetadata`, and `PendingRevision` all reference `ContentNode.id`. They do **not** use a bare `entityType` + `entityId` pair, and `SeoMetadata` has **no** FK to `ContentEntry.entityId`.
+
+Justification: the existing `SourceLink` / `ContentRevision` optional-FK star already shows how polymorphic IDs drift. A registry row is created in the same transaction as every editorial insert (`nodeId` unique on the native/custom parent). Postgres can then enforce existence. Service-layer-only `entityType`+`entityId` cannot prevent orphans without triggers. An orphan-cleanup job still runs in CMS-11 for any crash between node create and parent create (should be zero if transactional); integrity tests assert every editorial row has a node and every node has exactly one parent.
+
+```prisma
+model ContentNode {
+  id         String   @id @default(cuid())
+  entityType String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  seo        SeoMetadata[]
+  terms      TermBinding[]
+  provenance ContentProvenance[]
+  relationsFrom TypedRelation[] @relation("RelFrom")
+  relationsTo   TypedRelation[] @relation("RelTo")
+  workflowEvents WorkflowEvent[]
+  pending    PendingRevision?
+}
+
+model PendingRevision {
+  id            String        @id @default(cuid())
+  nodeId        String        @unique
+  node          ContentNode   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  workflowState WorkflowState @default(DRAFT)
+  snapshot      String        // full proposed JSON TEXT
+  authorId      String?
+  author        AdminUser?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+```
+
+**Live edit (D3).** Editing a `PUBLISHED` item does **not** mutate the live row. It creates (or updates) the single `PendingRevision` for that node (`workflowState = DRAFT`). That copy walks `DRAFT → IN_REVIEW → APPROVED →` publish, which atomically swaps `snapshot` onto the live row and writes a committed `ContentRevision`. The public site keeps serving the previous live version until that swap.
 
 ### 4.5 Native content (existing, evolved)
 
@@ -247,7 +301,10 @@ Sketches show **new or changed** fields. Unlisted columns stay as in `prisma/sch
 ```prisma
 model IdentityProfile {
   id                String             @id @default(cuid())
-  locale            Locale             // kept during dual-write; translations take over
+  nodeId            String             @unique
+  node              ContentNode        @relation(fields: [nodeId], references: [id], onDelete: Restrict)
+  // locale-neutral parent. Today there is NO @@unique([locale]) on IdentityProfile
+  // (two seed rows, EN and FR). CMS-08 collapses them to one parent + translations.
   fullName          String
   publicName        String
   signature         String
@@ -263,41 +320,43 @@ model IdentityProfile {
   portraitCaption   String
   portraitAssetId   String?
   portraitAsset     MediaAsset?        @relation(fields: [portraitAssetId], references: [id], onDelete: SetNull)
-  publishState      PublishState       @default(PUBLISHED)
-  verification      VerificationStatus @default(VERIFIED)
-  workflowState     WorkflowState      @default(PUBLISHED)
-  truthStatus       TruthStatus        @default(VERIFIED)
-  visibility        Visibility         @default(PUBLIC)
+  publishState      PublishState       @default(DRAFT)
+  verification      VerificationStatus @default(NEEDS_CONFIRMATION)
+  workflowState     WorkflowState      @default(DRAFT)
+  truthStatus       TruthStatus        @default(TO_CONFIRM)
+  visibility        Visibility         @default(PRIVATE)
   exampleFlag       ExampleFlag        @default(LIVE)
-  approvedForAsk    Boolean            @default(true)
+  approvedForAsk    Boolean            @default(false)
+  verifiedById      String?
+  verifiedAt        DateTime?
+  verificationNote  String             @default("")
   deletedAt         DateTime?
+  createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   revisions         ContentRevision[]
   translations      IdentityTranslation[]
-
-  @@unique([locale]) // today’s row-per-locale; dropped after translation cutover
 }
 
 model IdentityTranslation {
-  id              String           @id @default(cuid())
-  profileGroupId  String           // stable identity group key after de-duplicating EN/FR rows
-  locale          Locale
-  nationality     String
-  title           String
-  rolesLine       String
-  commandLine     String
-  summary         String
+  id               String           @id @default(cuid())
+  profileId        String
+  profile          IdentityProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  locale           Locale
+  nationality      String
+  title            String
+  rolesLine        String
+  commandLine      String
+  summary          String
   multiculturalNote String
-  portraitCaption String
-  state           TranslationState @default(MISSING)
-  sourceLocale    Locale           @default(FR)
+  portraitCaption  String
+  state            TranslationState @default(MISSING)
+  sourceLocale     Locale           @default(FR)
   lastTranslatedAt DateTime?
-  outdatedAt      DateTime?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  profile         IdentityProfile  @relation(fields: [profileGroupId], references: [id], onDelete: Cascade)
+  outdatedAt       DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
-  @@unique([profileGroupId, locale])
+  @@unique([profileId, locale])
 }
 
 model Place {
@@ -321,7 +380,7 @@ model Place {
   verification  VerificationStatus @default(NEEDS_CONFIRMATION)
   workflowState WorkflowState      @default(DRAFT)
   truthStatus   TruthStatus        @default(TO_CONFIRM)
-  visibility    Visibility         @default(PUBLIC)
+  visibility    Visibility         @default(PRIVATE)
   exampleFlag   ExampleFlag        @default(LIVE)
   approvedForAsk Boolean           @default(false)
   deletedAt     DateTime?
@@ -360,7 +419,7 @@ model JourneyChapter {
   badge         String             // verified | needs | none — mirrors journeyChapters()
   workflowState WorkflowState      @default(DRAFT)
   truthStatus   TruthStatus        @default(TO_CONFIRM)
-  visibility    Visibility         @default(PUBLIC)
+  visibility    Visibility         @default(PRIVATE)
   exampleFlag   ExampleFlag        @default(LIVE)
   deletedAt     DateTime?
   translations  JourneyChapterTranslation[]
@@ -381,6 +440,8 @@ model JourneyChapterTranslation {
   sourceLocale Locale           @default(FR)
   lastTranslatedAt DateTime?
   outdatedAt   DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
   @@unique([chapterId, locale])
 }
 
@@ -401,7 +462,7 @@ model Venture {
   verification VerificationStatus @default(NEEDS_CONFIRMATION)
   workflowState WorkflowState     @default(DRAFT)
   truthStatus  TruthStatus        @default(TO_CONFIRM)
-  visibility   Visibility         @default(PUBLIC)
+  visibility   Visibility         @default(PRIVATE)
   exampleFlag  ExampleFlag        @default(LIVE)
   approvedForAsk Boolean          @default(false)
   deletedAt    DateTime?
@@ -418,7 +479,7 @@ model Organization {
   exposureOnly  Boolean  @default(true)
   workflowState WorkflowState @default(DRAFT)
   truthStatus   TruthStatus   @default(TO_CONFIRM)
-  visibility    Visibility    @default(PUBLIC)
+  visibility    Visibility    @default(PRIVATE)
   deletedAt     DateTime?
   ventures      Venture[]
   createdAt     DateTime @default(now())
@@ -447,7 +508,7 @@ model RecordEvent {
   verification VerificationStatus @default(NEEDS_CONFIRMATION)
   workflowState WorkflowState     @default(DRAFT)
   truthStatus  TruthStatus        @default(TO_CONFIRM)
-  visibility   Visibility         @default(PUBLIC)
+  visibility   Visibility         @default(PRIVATE)
   exampleFlag  ExampleFlag        @default(LIVE)
   approvedForAsk Boolean          @default(false)
   deletedAt    DateTime?
@@ -477,6 +538,8 @@ model RecordEventTranslation {
   sourceLocale Locale           @default(FR)
   lastTranslatedAt DateTime?
   outdatedAt   DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
   @@unique([recordId, locale])
 }
 
@@ -497,7 +560,7 @@ model ProofItem {
   verification    VerificationStatus @default(NEEDS_CONFIRMATION) // Proof Graph status — unchanged enum
   workflowState   WorkflowState      @default(DRAFT)
   truthStatus     TruthStatus        @default(TO_CONFIRM)
-  visibility      Visibility         @default(PUBLIC)
+  visibility      Visibility         @default(PRIVATE)
   exampleFlag     ExampleFlag        @default(LIVE)
   approvedForAsk  Boolean            @default(false)
   deletedAt       DateTime?
@@ -519,7 +582,7 @@ model NowItem {
   verification VerificationStatus @default(NEEDS_CONFIRMATION)
   workflowState WorkflowState     @default(DRAFT)
   truthStatus  TruthStatus        @default(TO_CONFIRM)
-  visibility   Visibility         @default(PUBLIC)
+  visibility   Visibility         @default(PRIVATE)
   exampleFlag  ExampleFlag        @default(EXAMPLE)
   approvedForAsk Boolean          @default(false)
   deletedAt    DateTime?
@@ -541,12 +604,12 @@ model AskSource {
   bodyFr       String
   canonicalUrl String
   tags         String             @default("")
-  approved     Boolean            @default(true) // legacy; prefer approvedForAsk
-  publishState PublishState       @default(PUBLISHED)
-  verification VerificationStatus @default(VERIFIED)
-  workflowState WorkflowState     @default(PUBLISHED)
-  truthStatus  TruthStatus        @default(VERIFIED)
-  visibility   Visibility         @default(PUBLIC)
+  approved     Boolean            @default(false) // legacy; prefer approvedForAsk
+  publishState PublishState       @default(DRAFT)
+  verification VerificationStatus @default(NEEDS_CONFIRMATION)
+  workflowState WorkflowState     @default(DRAFT)
+  truthStatus  TruthStatus        @default(TO_CONFIRM)
+  visibility   Visibility         @default(PRIVATE)
   exampleFlag  ExampleFlag        @default(LIVE)
   approvedForAsk Boolean          @default(false)
   deletedAt    DateTime?
@@ -623,7 +686,7 @@ model ContentEntry {
   slug          String
   workflowState WorkflowState @default(DRAFT)
   truthStatus   TruthStatus   @default(TO_CONFIRM)
-  visibility    Visibility    @default(PUBLIC)
+  visibility    Visibility    @default(PRIVATE)
   exampleFlag   ExampleFlag   @default(LIVE)
   approvedForAsk Boolean      @default(false)
   scheduledAt   DateTime?
@@ -638,7 +701,6 @@ model ContentEntry {
   updatedAt     DateTime     @updatedAt
   translations  ContentEntryTranslation[]
   blocks        ContentBlock[]
-  seo           SeoMetadata[]
 
   @@unique([contentTypeId, slug])
   @@index([workflowState, truthStatus, deletedAt])
@@ -704,26 +766,28 @@ model TaxonomyTerm {
 }
 
 model TaxonomyTermTranslation {
-  id       String       @id @default(cuid())
-  termId   String
-  term     TaxonomyTerm @relation(fields: [termId], references: [id], onDelete: Cascade)
-  locale   Locale
-  label    String
-  state    TranslationState @default(MISSING)
-  sourceLocale Locale @default(FR)
+  id           String           @id @default(cuid())
+  termId       String
+  term         TaxonomyTerm     @relation(fields: [termId], references: [id], onDelete: Cascade)
+  locale       Locale
+  label        String
+  state        TranslationState @default(MISSING)
+  sourceLocale Locale           @default(FR)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
   @@unique([termId, locale])
 }
 
 model TermBinding {
-  id         String       @id @default(cuid())
-  termId     String
-  term       TaxonomyTerm @relation(fields: [termId], references: [id], onDelete: Cascade)
-  entityType String
-  entityId   String
-  createdAt  DateTime     @default(now())
+  id        String       @id @default(cuid())
+  termId    String
+  term      TaxonomyTerm @relation(fields: [termId], references: [id], onDelete: Cascade)
+  nodeId    String
+  node      ContentNode  @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
 
-  @@unique([termId, entityType, entityId])
-  @@index([entityType, entityId])
+  @@unique([termId, nodeId])
+  @@index([nodeId])
 }
 
 model ProvenanceSource {
@@ -748,38 +812,38 @@ model ProvenanceSource {
 }
 
 model ContentProvenance {
-  id         String            @id @default(cuid())
-  sourceId   String
-  source     ProvenanceSource  @relation(fields: [sourceId], references: [id], onDelete: Restrict)
-  entityType String
-  entityId   String
-  isApprovedAsk Boolean        @default(false)
-  createdAt  DateTime          @default(now())
+  id            String           @id @default(cuid())
+  sourceId      String
+  source        ProvenanceSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  nodeId        String
+  node          ContentNode      @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  isApprovedAsk Boolean          @default(false)
+  createdAt     DateTime         @default(now())
 
-  @@unique([sourceId, entityType, entityId])
-  @@index([entityType, entityId])
+  @@unique([sourceId, nodeId])
+  @@index([nodeId])
 }
 
 model TypedRelation {
-  id            String       @id @default(cuid())
-  fromType      String
-  fromId        String
-  toType        String
-  toId          String
+  id            String        @id @default(cuid())
+  fromNodeId    String
+  fromNode      ContentNode   @relation("RelFrom", fields: [fromNodeId], references: [id], onDelete: Restrict)
+  toNodeId      String
+  toNode        ContentNode   @relation("RelTo", fields: [toNodeId], references: [id], onDelete: Restrict)
   relationType  RelationType
   validFrom     String?
   validTo       String?
-  truthStatus   TruthStatus  @default(TO_CONFIRM)
+  truthStatus   TruthStatus   @default(TO_CONFIRM)
   workflowState WorkflowState @default(DRAFT)
-  visibility    Visibility   @default(PUBLIC)
-  note          String       @default("")
+  visibility    Visibility    @default(PRIVATE)
+  note          String        @default("")
   deletedAt     DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  @@unique([fromType, fromId, toType, toId, relationType])
-  @@index([fromType, fromId])
-  @@index([toType, toId])
+  @@unique([fromNodeId, toNodeId, relationType])
+  @@index([fromNodeId])
+  @@index([toNodeId])
   @@index([relationType, workflowState, truthStatus])
 }
 ```
@@ -847,6 +911,8 @@ model MediaAssetTranslation {
   sourceNote  String     @default("")
   state       TranslationState @default(MISSING)
   sourceLocale Locale    @default(FR)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   @@unique([assetId, locale])
 }
 ```
@@ -857,22 +923,21 @@ Public HTML never contains `storageKey` for `visibility = PRIVATE`. See `docs/CM
 
 ```prisma
 model SeoMetadata {
-  id           String  @id @default(cuid())
-  entityType   String
-  entityId     String
+  id           String      @id @default(cuid())
+  nodeId       String
+  node         ContentNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
   locale       Locale
-  title        String  @default("")
-  description  String  @default("")
-  canonical    String  @default("")
-  ogTitle      String  @default("")
+  title        String      @default("")
+  description  String      @default("")
+  canonical    String      @default("")
+  ogTitle      String      @default("")
   ogImageId    String?
-  robots       String  @default("index,follow")
-  schemaType   String  @default("")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  entry        ContentEntry? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  robots       String      @default("index,follow")
+  schemaType   String      @default("")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
-  @@unique([entityType, entityId, locale])
+  @@unique([nodeId, locale])
 }
 
 model NavItem {
@@ -903,14 +968,14 @@ model WorkflowEvent {
   id        String        @id @default(cuid())
   actorId   String?
   actor     AdminUser?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  entityType String
-  entityId  String
+  nodeId    String
+  node      ContentNode   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
   fromState WorkflowState?
   toState   WorkflowState
   note      String        @default("")
   createdAt DateTime      @default(now())
 
-  @@index([entityType, entityId, createdAt])
+  @@index([nodeId, createdAt])
 }
 
 model CmsObservabilityEvent {
@@ -981,17 +1046,28 @@ erDiagram
   AdminUser ||--o{ MediaAsset : uploads
   AdminUser ||--o{ WorkflowEvent : performs
 
+  ContentNode ||--o{ SeoMetadata : seo
+  ContentNode ||--o{ TermBinding : tagged
+  ContentNode ||--o{ ContentProvenance : cited
+  ContentNode ||--o{ WorkflowEvent : logged
+  ContentNode ||--o{ PendingRevision : pending
+  ContentNode ||--o{ TypedRelation : from_rel
+  ContentNode ||--o{ TypedRelation : to_rel
+
   ContentType ||--o{ FieldDefinition : defines
   FieldDefinition ||--o{ FieldOption : options
   ContentType ||--o{ ContentEntry : instances
   ContentEntry ||--o{ ContentEntryTranslation : localized
   ContentEntry ||--o{ ContentBlock : blocks
-  ContentEntry ||--o{ SeoMetadata : seo
+  ContentEntry ||--|| ContentNode : node
 
   Place ||--o{ PlaceTranslation : localized
   RecordEvent ||--o{ RecordEventTranslation : localized
   RecordEvent ||--o{ ProofItem : related
   JourneyChapter ||--o{ JourneyChapterTranslation : localized
+
+  Organization ||--o{ Venture : ventures
+  Venture ||--o| Organization : belongs
 
   ProvenanceSource ||--o{ ContentProvenance : cited_by
   MediaAsset ||--o{ MediaDerivative : derivatives
@@ -1002,10 +1078,11 @@ erDiagram
   TaxonomyTerm ||--o{ TaxonomyTerm : parent
 
   IdentityProfile ||--o{ IdentityTranslation : localized
+  IdentityProfile ||--|| ContentNode : node
   AskSource ||--o{ SourceLink : legacy
 ```
 
-`TypedRelation` is polymorphic (`fromType`/`fromId` → `toType`/`toId`) and is not drawn as a single FK line.
+`TypedRelation` uses real FKs `fromNodeId` / `toNodeId` on `ContentNode` (not a string entityType pair).
 
 ### 5.2 Typed relationship graph feeding the Proof Graph
 
@@ -1023,7 +1100,7 @@ flowchart LR
   Prov["ProvenanceSource"]
 
   EJC -- "FOUNDED / LEADS" --> Org
-  EJC -- "LIVED_IN" --> Place
+  EJC -- "BORN_IN" --> Place
   Rec -- "BELONGS_TO journey" --> EJC
   Proof -- "EVIDENCES / RELATED_TO" --> Rec
   Media -- "DOCUMENTS" --> Rec
@@ -1036,7 +1113,7 @@ flowchart LR
 
 | from | relationType | to | truth | notes |
 |---|---|---|---|---|
-| IdentityProfile | `LIVED_IN` | Place `kinshasa` | `VERIFIED` | Birthplace already seeded |
+| IdentityProfile | `BORN_IN` | Place `kinshasa` | `VERIFIED` | Birthplace already seeded. Not `LIVED_IN`. |
 | IdentityProfile | `LEADS` | Organization `clevone-sarl` | `VERIFIED` | Exposure only; not a catalogue |
 | ProofItem `origin-kinshasa` | `EVIDENCES` | RecordEvent `birth-kinshasa-1994` | `VERIFIED` | Today’s `relatedRecordId` |
 | ProofItem | `SUPPORTED_BY` | ProvenanceSource `mandate-confirmed-facts` | `VERIFIED` | Today’s `SourceLink` |
@@ -1081,12 +1158,16 @@ FR is the **primary editorial language** (`sourceLocale` defaults to `FR`). EN i
 - Editing the source locale (default FR) sets `outdatedAt = now()` and `state = OUTDATED` on the other locale if that locale was `COMPLETE`.
 - `lastTranslatedAt` updates only when a translator saves a non-source locale.
 - Admin Translations view lists missing/outdated counts per entity.
-- Publish policy (resolved from mandate): **FR-only may be published** if workflow + truth + safety pass. EN `MISSING` is shown in admin, not a hard gate. Public EN pages fall back to FR with a visible language pair in `hreflang` only for existing translations (no duplicate-content EN URL that copies FR silently). If EN is missing, `/en/...` may 404 for that slug or show the FR body behind a “translation missing” banner — **CMS-08 implements the safer option: keep current behaviour** (column pairs always have both strings, even if identical). Migration copies today’s EN and FR strings as `COMPLETE` so URLs stay populated.
+- **FR/EN public policy (one rule, D6).** FR is primary. A slug may be published when the FR translation is `COMPLETE` (workflow + truth/label + safety still apply). EN `MISSING` is **not** a publish gate.
+  - Public site: `/en/{slug}` **404s** when EN is `MISSING`. No silent FR-in-EN copy (avoids duplicate content). `/fr/{slug}` remains the canonical page.
+  - Sitemap and `hreflang`: emit the EN alternate only when EN is `COMPLETE` or `OUTDATED` (an EN string exists).
+  - Ask EJC: use the requested locale when that translation is `COMPLETE` or `OUTDATED`; otherwise answer from FR and label the locale. Never invent an EN sentence.
+  - Migration copies today’s EN and FR column/row strings as `COMPLETE`, so existing `/en` URLs and e2e keep working.
 - UI chrome (nav labels, buttons) stays in `lib/i18n.ts` until/unless `NavItem` replaces explore/nav in CMS-09. **Biography facts do not belong in the dictionary** long-term; `CONFIRMED` + CMS rows own them.
 
-### Identity / Now / Signal
+### Identity / Now / Signal (one pattern)
 
-These are row-per-locale today. CMS-08 introduces a group id and translation children, then collapses to one parent + two translations. Seed’s EN and FR identity rows become one `IdentityProfile` group.
+One locale-neutral parent + `*Translation` children with `@@unique([parentId, locale])`. Same as Place and Record. Today `IdentityProfile` / `NowItem` / `SignalPost` are **row-per-locale with no unique-on-locale constraint**. CMS-08 collapses the two identity seed rows into one `IdentityProfile` + two `IdentityTranslation`s. Do not introduce a `profileGroupId` alias — the FK is `profileId`.
 
 ---
 
@@ -1096,12 +1177,12 @@ These are row-per-locale today. CMS-08 introduces a group id and translation chi
 |---|---|---|
 | All editorial | `(workflowState, truthStatus, deletedAt)` | Public/admin lists |
 | `AskSource` | `(approvedForAsk, workflowState, truthStatus, visibility, deletedAt)` | Ask corpus |
-| `TypedRelation` | `(fromType, fromId)`, `(toType, toId)`, unique 5-tuple | Proof Graph |
-| `ContentProvenance` | `(entityType, entityId)` | Sources on a claim |
+| `TypedRelation` | `(fromNodeId)`, `(toNodeId)`, unique `(fromNodeId, toNodeId, relationType)` | Proof Graph |
+| `ContentProvenance` | `(nodeId)` | Sources on a claim |
 | `ContentEntry` | unique `(contentTypeId, slug)` | URLs |
 | `MediaAsset` | `checksumSha256`, `(visibility, deletedAt)` | Dedup + access |
 | `AuditLog` | `(entity, entityId)`, `(actorId, createdAt)` | Security screen |
-| `SeoMetadata` | unique `(entityType, entityId, locale)` | CMS-09 |
+| `SeoMetadata` | unique `(nodeId, locale)` | CMS-09 |
 | `RecordEvent` | `(year, occurredOn)` | Existing Record order |
 
 GIN on `ContentEntry.customValues` and `ContentBlock.payload` only after CMS-06 has query patterns.

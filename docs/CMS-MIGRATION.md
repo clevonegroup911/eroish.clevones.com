@@ -4,12 +4,12 @@ Non-destructive, reversible design for moving today’s hard-coded and seeded co
 
 <!-- cms-canonical
 roles: SUPER_ADMIN, ADMIN, EDITOR, AUTHOR, REVIEWER, MEDIA_MANAGER
-capabilities: content.create, content.edit, content.review, content.publish, content.delete, media.upload, media.delete, users.manage, roles.manage, settings.manage, audit.read
+capabilities: content.create, content.edit, content.review, content.publish, content.delete, content.verify, media.upload, media.delete, users.manage, roles.manage, settings.manage, audit.read
 workflow: DRAFT, IN_REVIEW, APPROVED, SCHEDULED, PUBLISHED, UNPUBLISHED, ARCHIVED
 truth: VERIFIED, UNVERIFIED, TO_CONFIRM, PRIVATE
 -->
 
-Workflow (`DRAFT`, `IN_REVIEW`, `APPROVED`, `SCHEDULED`, `PUBLISHED`, `UNPUBLISHED`, `ARCHIVED`) and truth (`VERIFIED`, `UNVERIFIED`, `TO_CONFIRM`, `PRIVATE`) stay independent during and after migration. Publishing a migrated row does not verify it.
+Workflow (`DRAFT`, `IN_REVIEW`, `APPROVED`, `SCHEDULED`, `PUBLISHED`, `UNPUBLISHED`, `ARCHIVED`) and truth (`VERIFIED`, `UNVERIFIED`, `TO_CONFIRM`, `PRIVATE`) stay independent during and after migration. Publishing a migrated row does not verify it and does not grant `content.verify`. Confirmed seed facts get `verifiedById` / `verifiedAt` set explicitly as owner-attestation (`OWNER_CONFIRMED`).
 
 ---
 
@@ -30,7 +30,7 @@ MediaStorageAdapter
 
 | Environment | Adapter | Root / bucket |
 |---|---|---|
-| Local Fedora / CI | `LOCAL` | `var/cms-media/` (gitignored); keys `{yyyy}/{cuid}.{ext}` |
+| Local Fedora / CI | `LOCAL` | `var/cms-media/` (gitignored); keys `{yyyy}/{cuid}.{ext}`. Fedora DB via Podman. |
 | Production | `S3` or `GCS` via **S3-compatible** API | Owner supplies bucket + credentials at CMS-03 (secrets — not in git) |
 
 DB holds **metadata only** (`MediaAsset`, `MediaDerivative`, `MediaAssetTranslation` in `docs/CMS-DATA-MODEL.md`). Never persist private filesystem paths in public HTML.
@@ -104,7 +104,7 @@ Images: JPEG, PNG, WebP, AVIF, sanitized SVG. Video: file metadata + YouTube/Vim
 | Venture CLEVONE SARL | seed | Same; `exposureOnly` stays true |
 | Record birth | seed | Same slug |
 | Four proofs | seed | Same slugs; `relatedRecordId` on origin |
-| Now 8×2 EXAMPLE | seed | Keep `IN_REVIEW` + `TO_CONFIRM` + `EXAMPLE`; public NOW still shows labelled placeholders |
+| Now 8×2 EXAMPLE | seed | Migrate `REVIEW` → `PUBLISHED` + `TO_CONFIRM` + `EXAMPLE` + `PUBLIC`; same “Example data” banners so e2e stays green. `IN_REVIEW` is admin-only after cutover. |
 | Example thinking/thesis/ledger/media | seed | Keep labelled EXAMPLE; not Ask-approved |
 | Ask sources ×3 | seed | `approvedForAsk = true`, `PUBLISHED`, `VERIFIED` |
 | SourceLink mandate | seed `MANDATE_SOURCE` / `MANDATE_SOURCE_KEY` | Dual-write `ProvenanceSource` `OWNER_CONFIRMED` |
@@ -142,7 +142,7 @@ No `prisma migrate reset` on production (`docs/DEPLOYMENT.md` Forbidden). No `DR
 | Legacy | New |
 |---|---|
 | `PublishState.DRAFT` | `WorkflowState.DRAFT` |
-| `PublishState.REVIEW` | `WorkflowState.IN_REVIEW` |
+| `PublishState.REVIEW` (admin-only after cutover) | For **currently public** REVIEW placeholders (NOW, Challenge theses, pending Place): `PUBLISHED` + `TO_CONFIRM` (+ `EXAMPLE` if already). For unpublished review work: `IN_REVIEW` |
 | `PublishState.PUBLISHED` | `WorkflowState.PUBLISHED` |
 | `PublishState.ARCHIVED` | `WorkflowState.ARCHIVED` |
 | `VerificationStatus` FACTUAL | `TruthStatus.VERIFIED` |
@@ -168,7 +168,7 @@ Proof Graph `verification` column is **copied, not replaced**.
 |---|---|
 | `/en`, `/fr` | Home still uses `CONFIRMED` + published counts |
 | `/[locale]/identity` | `getIdentity` → CMS profile + lock |
-| `/[locale]/now` | NOW loader keeps `PUBLISHED` + labelled `IN_REVIEW` EXAMPLE |
+| `/[locale]/now` | NOW rows that were public `REVIEW` become `PUBLISHED` + `TO_CONFIRM` + `EXAMPLE`; banners unchanged |
 | `/[locale]/record` | `getPublishedRecord` + slug `birth-kinshasa-1994` |
 | `/[locale]/proof` | same proof slugs |
 | `/[locale]/journey` | `JourneyChapter` in chapter-id order |
@@ -205,10 +205,10 @@ Do not rewrite existing assertions to hide gaps. CMS-12 is done when:
 
 ## Migration risks
 
-1. **Loader behaviour drift** — NOW and Challenge currently include `REVIEW`. A naive `PUBLISHED`-only CMS filter would break e2e. Mitigation: explicit placeholder rule in `docs/CMS-ARCHITECTURE.md`.
+1. **Loader behaviour drift** — NOW and Challenge currently include `REVIEW`. Mitigation: migrate those public placeholders to `PUBLISHED` + `TO_CONFIRM` (labelled). Do **not** keep an `IN_REVIEW`-is-public exception.
 2. **Locale model split** — Identity/Now/Signal are row-per-locale; others are column pairs. Dual-write until CMS-08.
 3. **`SourceLink` star → provenance** — lose `isApprovedAsk` if not copied. Dual-write.
-4. **SQLite vs Postgres in contributor workflows** — Fedora without Docker fails CMS-02+. Document Compose as required for CMS branches.
+4. **SQLite vs Postgres in contributor workflows** — Fedora without Podman/Docker fails CMS-02+. Document `podman-compose` (or `docker compose`) as required for CMS branches.
 5. **Incomplete `schema.postgres.prisma`** — cannot deploy from it today. Unify in CMS-02.
 6. **No migration history** — first migrate must be generated from the evolved schema, not from a fake SQLite history.
 7. **Identity lock bypass** — editor changes birthplace in CMS. Mitigation: CI diff against `CONFIRMED`.

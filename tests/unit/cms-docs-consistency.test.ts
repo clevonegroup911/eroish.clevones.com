@@ -6,8 +6,11 @@ import {
   REQUIRED_PHASES,
   REQUIRED_SECTIONS,
   checkCmsDocs,
+  hasExactToken,
   mermaidFenceErrors,
   parseCanonical,
+  parseRbacMatrix,
+  parseTransitions,
   readCmsDoc,
 } from "../../scripts/check-cms-docs";
 
@@ -31,6 +34,7 @@ describe("CMS-01 architecture docs consistency", () => {
       "REVIEWER",
       "MEDIA_MANAGER",
     ]);
+    expect(CANONICAL.capabilities).toContain("content.verify");
     expect(CANONICAL.workflow).toEqual([
       "DRAFT",
       "IN_REVIEW",
@@ -48,6 +52,28 @@ describe("CMS-01 architecture docs consistency", () => {
     const first = JSON.stringify(parsed[0]);
     for (const block of parsed) {
       expect(JSON.stringify(block)).toBe(first);
+    }
+  });
+
+  it("matches role tokens exactly so ADMIN is not SUPER_ADMIN", () => {
+    expect(hasExactToken("SUPER_ADMIN", "ADMIN")).toBe(false);
+    expect(hasExactToken("role ADMIN may", "ADMIN")).toBe(true);
+    expect(hasExactToken("content.verify required", "content.verify")).toBe(true);
+  });
+
+  it("cross-checks RBAC matrix capabilities against workflow transitions", () => {
+    const security = readCmsDoc("docs/CMS-SECURITY.md");
+    const plan = readCmsDoc("docs/CMS-IMPLEMENTATION-PLAN.md");
+    const matrix = parseRbacMatrix(security);
+    const transitions = parseTransitions(plan);
+    expect(matrix).not.toBeNull();
+    expect(transitions.length).toBeGreaterThan(0);
+    expect(matrix?.SUPER_ADMIN).toContain("content.verify");
+    expect(matrix?.ADMIN).not.toContain("content.verify");
+    for (const edge of transitions) {
+      expect(CANONICAL.capabilities, edge.capability).toContain(edge.capability);
+      const holders = Object.values(matrix ?? {}).some((caps) => caps.includes(edge.capability));
+      expect(holders, `${edge.from}->${edge.to} ${edge.capability}`).toBe(true);
     }
   });
 

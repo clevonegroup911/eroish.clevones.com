@@ -2,7 +2,9 @@
  * Lightweight CMS-01 architecture consistency check.
  * Verifies the five docs exist, cover mandate §25 items 1–18,
  * include CMS-01–CMS-12 acceptance criteria, share the same
- * RBAC / workflow / truth tokens, and fence mermaid blocks.
+ * RBAC / workflow / truth tokens (exact matching), cross-check
+ * workflow transitions against the RBAC matrix, and structurally
+ * parse mermaid fences offline (no mermaid JS renderer).
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -59,6 +61,7 @@ export const CANONICAL = {
     "content.review",
     "content.publish",
     "content.delete",
+    "content.verify",
     "media.upload",
     "media.delete",
     "users.manage",
@@ -71,6 +74,9 @@ export const CANONICAL = {
 } as const;
 
 const CANONICAL_BLOCK = /<!--\s*cms-canonical\s*([\s\S]*?)-->/;
+const RBAC_BLOCK = /<!--\s*cms-rbac-matrix\s*([\s\S]*?)-->/;
+const TRANSITION_BLOCK = /<!--\s*cms-transitions\s*([\s\S]*?)-->/;
+const MERMAID_KINDS = /^(flowchart|graph|stateDiagram-v2|erDiagram)\b/;
 
 export type CmsDocsCheckResult = {
   ok: boolean;
@@ -98,6 +104,12 @@ function parseList(block: string, key: string): string[] {
     .filter(Boolean);
 }
 
+/** Exact token: ADMIN must not match SUPER_ADMIN. */
+export function hasExactToken(text: string, token: string): boolean {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![A-Za-z0-9_])${escaped}(?![A-Za-z0-9_])`).test(text);
+}
+
 export function parseCanonical(markdown: string): {
   roles: string[];
   capabilities: string[];
@@ -115,6 +127,53 @@ export function parseCanonical(markdown: string): {
   };
 }
 
+export function parseRbacMatrix(markdown: string): Record<string, string[]> | null {
+  const match = RBAC_BLOCK.exec(markdown);
+  if (!match?.[1]) return null;
+  const matrix: Record<string, string[]> = {};
+  for (const raw of match[1].split("\n")) {
+    const line = raw.trim();
+    if (!line || !line.includes(":")) continue;
+    const colon = line.indexOf(":");
+    const role = line.slice(0, colon).trim();
+    const caps = line
+      .slice(colon + 1)
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    matrix[role] = caps;
+  }
+  return matrix;
+}
+
+export function parseTransitions(markdown: string): { from: string; to: string; capability: string }[] {
+  const match = TRANSITION_BLOCK.exec(markdown);
+  if (!match?.[1]) return [];
+  const rows: { from: string; to: string; capability: string }[] = [];
+  for (const raw of match[1].split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const parts = line.split(":");
+    if (parts.length !== 3) continue;
+    const [from, to, capability] = parts;
+    if (!from || !to || !capability) continue;
+    rows.push({ from, to, capability });
+  }
+  return rows;
+}
+
+function countChars(text: string, open: string, close: string): { open: number; close: number } {
+  return {
+    open: [...text].filter((ch) => ch === open).length,
+    close: [...text].filter((ch) => ch === close).length,
+  };
+}
+
+/**
+ * Offline mermaid structural check. Limitation: we do not execute the mermaid
+ * JS renderer (not a repo dependency). We validate fence pairing, diagram
+ * kind, non-empty body, and bracket balance.
+ */
 export function mermaidFenceErrors(markdown: string, file: string): string[] {
   const errors: string[] = [];
   const ticks = markdown.match(/```/g)?.length ?? 0;
@@ -135,8 +194,22 @@ export function mermaidFenceErrors(markdown: string, file: string): string[] {
       break;
     }
     const body = markdown.slice(afterOpen, close);
-    if (!body.trim()) {
+    const trimmed = body.trim();
+    if (!trimmed) {
       errors.push(`${file}: empty mermaid block`);
+    } else {
+      const first = trimmed.split(/\r?\n/).find((line) => line.trim() && !line.trim().startsWith("%%")) ?? "";
+      if (!MERMAID_KINDS.test(first.trim())) {
+        errors.push(`${file}: mermaid block must start with flowchart|graph|stateDiagram-v2|erDiagram`);
+      }
+      const squares = countChars(trimmed, "[", "]");
+      const parens = countChars(trimmed, "(", ")");
+      if (squares.open !== squares.close) errors.push(`${file}: mermaid [] imbalance`);
+      if (parens.open !== parens.close) errors.push(`${file}: mermaid () imbalance`);
+      // erDiagram uses --o{ / }o-- as cardinality, not braces.
+      const withoutCard = trimmed.replace(/\}o--|--o\{|\}\|--|--\|\{/g, "rel");
+      const curlies = countChars(withoutCard, "{", "}");
+      if (curlies.open !== curlies.close) errors.push(`${file}: mermaid {} imbalance`);
     }
     searchFrom = close + 3;
   }
@@ -168,6 +241,8 @@ export function checkCmsDocs(root = repoRoot()): CmsDocsCheckResult {
   }
 
   const plan = texts[CMS_DOC_FILES.indexOf("docs/CMS-IMPLEMENTATION-PLAN.md")] ?? "";
+  const security = texts[CMS_DOC_FILES.indexOf("docs/CMS-SECURITY.md")] ?? "";
+
   for (const phase of REQUIRED_PHASES) {
     const heading = `### ${phase}`;
     if (!plan.includes(heading)) {
@@ -203,24 +278,74 @@ export function checkCmsDocs(root = repoRoot()): CmsDocsCheckResult {
     });
   }
 
+  const firstCanonical = parsed[0]?.canonical;
+  for (const row of parsed.slice(1)) {
+    if (!firstCanonical || !row.canonical) continue;
+    if (JSON.stringify(row.canonical) !== JSON.stringify(firstCanonical)) {
+      errors.push(`${row.file}: cms-canonical tokens differ from ${CMS_DOC_FILES[0]}`);
+    }
+  }
+
   for (const [index, text] of texts.entries()) {
     errors.push(...mermaidFenceErrors(text, CMS_DOC_FILES[index] ?? "doc"));
   }
 
-  // Cross-check that the human-facing tables also name every role / capability / state.
   for (const [index, text] of texts.entries()) {
     const file = CMS_DOC_FILES[index] ?? "doc";
     for (const role of CANONICAL.roles) {
-      if (!text.includes(role)) errors.push(`${file}: does not mention role ${role}`);
+      if (!hasExactToken(text, role)) errors.push(`${file}: missing exact role token ${role}`);
     }
     for (const cap of CANONICAL.capabilities) {
-      if (!text.includes(cap)) errors.push(`${file}: does not mention capability ${cap}`);
+      if (!hasExactToken(text, cap)) errors.push(`${file}: missing exact capability token ${cap}`);
     }
     for (const state of CANONICAL.workflow) {
-      if (!text.includes(state)) errors.push(`${file}: does not mention workflow state ${state}`);
+      if (!hasExactToken(text, state)) errors.push(`${file}: missing exact workflow token ${state}`);
     }
     for (const status of CANONICAL.truth) {
-      if (!text.includes(status)) errors.push(`${file}: does not mention truth status ${status}`);
+      if (!hasExactToken(text, status)) errors.push(`${file}: missing exact truth token ${status}`);
+    }
+  }
+
+  const matrix = parseRbacMatrix(security);
+  if (!matrix) {
+    errors.push("docs/CMS-SECURITY.md: missing <!-- cms-rbac-matrix --> block");
+  } else {
+    for (const role of CANONICAL.roles) {
+      if (!matrix[role]) errors.push(`RBAC matrix missing role ${role}`);
+    }
+    for (const [role, caps] of Object.entries(matrix)) {
+      if (!CANONICAL.roles.includes(role as (typeof CANONICAL.roles)[number])) {
+        errors.push(`RBAC matrix unknown role ${role}`);
+      }
+      for (const cap of caps) {
+        if (!CANONICAL.capabilities.includes(cap as (typeof CANONICAL.capabilities)[number])) {
+          errors.push(`RBAC matrix ${role} has unknown capability ${cap}`);
+        }
+      }
+    }
+  }
+
+  const transitions = parseTransitions(plan);
+  if (transitions.length === 0) {
+    errors.push("docs/CMS-IMPLEMENTATION-PLAN.md: missing <!-- cms-transitions --> block");
+  }
+  for (const edge of transitions) {
+    if (!CANONICAL.workflow.includes(edge.from as (typeof CANONICAL.workflow)[number])) {
+      errors.push(`transition from unknown state ${edge.from}`);
+    }
+    if (!CANONICAL.workflow.includes(edge.to as (typeof CANONICAL.workflow)[number])) {
+      errors.push(`transition to unknown state ${edge.to}`);
+    }
+    if (!CANONICAL.capabilities.includes(edge.capability as (typeof CANONICAL.capabilities)[number])) {
+      errors.push(`transition ${edge.from}->${edge.to} uses unknown capability ${edge.capability}`);
+    }
+    if (matrix) {
+      const holders = Object.entries(matrix)
+        .filter(([, caps]) => caps.includes(edge.capability))
+        .map(([role]) => role);
+      if (holders.length === 0) {
+        errors.push(`transition ${edge.from}->${edge.to} capability ${edge.capability} is granted to no role`);
+      }
     }
   }
 

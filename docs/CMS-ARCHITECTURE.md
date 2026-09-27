@@ -4,14 +4,16 @@ Project: `eroish.clevones.com`. Baseline: PR #1 branch `cursor/ejc-identity-plat
 
 <!-- cms-canonical
 roles: SUPER_ADMIN, ADMIN, EDITOR, AUTHOR, REVIEWER, MEDIA_MANAGER
-capabilities: content.create, content.edit, content.review, content.publish, content.delete, media.upload, media.delete, users.manage, roles.manage, settings.manage, audit.read
+capabilities: content.create, content.edit, content.review, content.publish, content.delete, content.verify, media.upload, media.delete, users.manage, roles.manage, settings.manage, audit.read
 workflow: DRAFT, IN_REVIEW, APPROVED, SCHEDULED, PUBLISHED, UNPUBLISHED, ARCHIVED
 truth: VERIFIED, UNVERIFIED, TO_CONFIRM, PRIVATE
 -->
 
 **Hard content rule.** Never invent EJC biography. The only confirmed place is Kinshasa (born 1 September 1994). No mottos or slogans are attributed to EJC. `lib/identity.ts` (`CONFIRMED`) remains the compile-time identity lock until a later phase proves CMS rows match it. Any example rows below are **illustrative and non-factual**.
 
-**Two independent axes (mandatory).** Workflow states (`DRAFT`, `IN_REVIEW`, `APPROVED`, `SCHEDULED`, `PUBLISHED`, `UNPUBLISHED`, `ARCHIVED`) never imply truth. Truth statuses (`VERIFIED`, `UNVERIFIED`, `TO_CONFIRM`, `PRIVATE`) never imply publication. Publishing must never silently verify anything. `PRIVATE` content is unreachable by public queries and by Ask EJC.
+**Two independent axes (mandatory).** Workflow states (`DRAFT`, `IN_REVIEW`, `APPROVED`, `SCHEDULED`, `PUBLISHED`, `UNPUBLISHED`, `ARCHIVED`) never imply truth. Truth statuses (`VERIFIED`, `UNVERIFIED`, `TO_CONFIRM`, `PRIVATE`) never imply publication. Publishing must never silently verify anything.
+
+**Visibility vs label (D1).** A row is publicly reachable only when `workflowState = PUBLISHED` **and** `visibility = PUBLIC` **and** `deletedAt` is null **and** `truthStatus != PRIVATE`. `truthStatus` decides the **label**, never visibility. `UNVERIFIED` / `TO_CONFIRM` public rows must render “à confirmer / to confirm” (or “unverified”) and must never be phrased as fact. `PRIVATE` is unreachable by public queries and by Ask EJC. `IN_REVIEW` is **admin-only** (no public-IN_REVIEW exception). Today’s NOW/Challenge `REVIEW` placeholders migrate to `PUBLISHED` + `TO_CONFIRM` (see `docs/CMS-MIGRATION.md`).
 
 ---
 
@@ -53,10 +55,10 @@ The running app is already a structured identity system with a Prisma schema, a 
 
 `lib/queries.ts` filters almost everything by `publishState: "PUBLISHED"`. Exceptions that the CMS must preserve:
 
-- `app/[locale]/now/page.tsx` loads `PUBLISHED` **and** `REVIEW` so labelled example Now items remain visible (e2e `tests/e2e/public.spec.ts` asserts “Example data”).
-- Homepage also counts `Place` rows in `REVIEW` as pending placeholders.
-- `app/api/challenge/route.ts` accepts submissions against theses in `PUBLISHED` or `REVIEW`.
-- Ask EJC (`lib/ask-ejc.ts` `retrieveFromApprovedSources`, `app/api/ask/route.ts`) queries `AskSource` where `approved: true` **and** `publishState: "PUBLISHED"`. Unapproved sources are ignored. No generative model.
+- `app/[locale]/now/page.tsx` loads `PUBLISHED` **and** `REVIEW` so labelled example Now items remain visible (e2e `tests/e2e/public.spec.ts` asserts “Example data”). **CMS design:** that `REVIEW` exception is retired; those rows migrate to `PUBLISHED` + `TO_CONFIRM` + `EXAMPLE` with the same banners.
+- Homepage also counts `Place` rows in `REVIEW` as pending placeholders (same migration: `PUBLISHED` + `TO_CONFIRM`, labelled).
+- `app/api/challenge/route.ts` accepts submissions against theses in `PUBLISHED` or `REVIEW` (same migration to `PUBLISHED` + `TO_CONFIRM`).
+- Ask EJC (`lib/ask-ejc.ts` `retrieveFromApprovedSources`, `app/api/ask/route.ts`) queries `AskSource` where `approved: true` **and** `publishState: "PUBLISHED"`. Unapproved sources are ignored. No generative model. Mandate §19 requires a public unverified/to-confirm Ask tier — those rows are published and labelled, not hidden.
 
 ### Trust model (as built)
 
@@ -199,11 +201,11 @@ flowchart TB
 | `lib/cms/content.ts` | Load/save native + custom entries; never return `PRIVATE` or `deletedAt != null` on public paths | Publishing (delegates to publishing service) |
 | `lib/cms/workflow.ts` | Legal transitions + actor timestamps | Changing `TruthStatus` |
 | `lib/cms/publishing.ts` | Extends `publishingSafetyCheck`; schedule; revalidate | Verifying facts |
-| `lib/cms/authz.ts` | Capability check on top of `requireAdmin()` | Replacing the cookie/JWT |
+| `lib/cms/authz.ts` | `requireCapability` (CMS-04) on top of `requireAdmin()`; `content.verify` is SUPER_ADMIN-only by default | Replacing the cookie/JWT |
 | `lib/cms/media.ts` | Upload pipeline, sniff, sanitize, derivatives, signed URL | Storing bytes in Postgres |
 | `lib/cms/ask-corpus.ts` | Authoritative Ask source list | Generating answers |
 | `lib/identity.ts` | Confirmed biography lock | CMS edits |
-| Public pages | Render published (and explicitly labelled placeholders) | Direct Prisma writes |
+| Public pages | Render `PUBLISHED` + `PUBLIC` rows; label by `truthStatus` | Direct Prisma writes; never show `IN_REVIEW` |
 | Storage adapter | Local disk (dev) / S3-compatible (prod) | Public raw private keys |
 
 ### Admin information architecture (target, CMS-05+)
@@ -217,13 +219,13 @@ Dashboard, Content, Journey, Biography, Places, NOW, Record, Proof, Thinking, Me
 Include only when **all** are true:
 
 - `workflowState === PUBLISHED`
+- `visibility === PUBLIC`
 - `truthStatus !== PRIVATE`
-- `visibility === PUBLIC` (derived: not private, not soft-deleted)
 - `approvedForAsk === true`
 - `exampleFlag !== EXAMPLE`
 - `deletedAt == null`
 
-Answers from `truthStatus === VERIFIED` may be stated as established. Answers from `UNVERIFIED` or `TO_CONFIRM` must be labelled as such and must not be phrased as fact. `PRIVATE` rows are not queried (no `OR` leak, no admin-session bypass on this route). Retrieval remains `retrieveFromApprovedSources` until a later owner-approved model is introduced.
+`truthStatus` is the **label**, not a visibility filter (except `PRIVATE`, which is never public). Answers from `VERIFIED` may be stated as established. Answers from `UNVERIFIED` or `TO_CONFIRM` are required by mandate §19 and must be labelled as such — never phrased as fact. `PRIVATE` rows are not queried (no `OR` leak, no admin-session bypass on this route). Retrieval remains `retrieveFromApprovedSources` until an owner-approved generative model is introduced.
 
 ### Identity lock
 
@@ -239,7 +241,7 @@ Answers from `truthStatus === VERIFIED` may be stated as established. Answers fr
 
 - The existing surface is already App Router + Prisma + server actions (`app/admin/actions.ts`) and route handlers (`app/api/*`).
 - Production is a single PM2 process (`ops/pm2/ecosystem.config.cjs`) on the existing Nginx VM. A second Node service doubles deploy, auth, and CSP surface.
-- Admin is same-origin; CSRF is mitigated by `SameSite=lax` + origin checks, not by a public API schema.
+- Admin is same-origin. CSRF for cookie-authenticated **server actions** uses `SameSite=lax`. New admin **route handlers** (uploads, cron, JSON APIs) additionally require `Origin` / `Sec-Fetch-Site` to match `APP_ORIGIN` (or a same-origin relative request) and, for cron, a secret header — see `docs/CMS-SECURITY.md`. Not a public API schema.
 - GraphQL would add an introspection/IDOR surface the threat model does not need.
 - Mandate §14: simplest production-grade design in the existing Next.js; server-side validation of all input (Zod, already `lib/zod.ts`).
 
@@ -269,7 +271,7 @@ Answers from `truthStatus === VERIFIED` may be stated as established. Answers fr
 
 ### Existing routes kept
 
-`/api/auth/login`, `/api/auth/logout`, `/api/ask`, `/api/connect`, `/api/challenge`, `/api/analytics`, `/api/redirect`, `/health`, `/sitemap.xml`, `/robots.txt`, `/feed.xml`, `/feed.atom`. New upload routes (CMS-03) are admin-only and capability-gated.
+`/api/auth/login`, `/api/auth/logout`, `/api/ask`, `/api/connect`, `/api/challenge`, `/api/analytics`, `/api/redirect`, `/health`, `/sitemap.xml`, `/robots.txt`, `/feed.xml`, `/feed.atom`. New upload routes (CMS-03) are admin-only, CSRF origin-checked, and `requireCapability` gated (CMS-04). Scheduler is `POST /api/cron/publish` only (never GET).
 
 ---
 
@@ -317,9 +319,9 @@ Before adding Redis or a CDN product: record TTFB of `/en`, `/en/record`, `/en/p
 
 See `docs/CMS-DATA-MODEL.md` and `docs/CMS-MIGRATION.md` for the full argument.
 
-**CMS-02 switches the committed Prisma schema to PostgreSQL.** Dev uses Compose Postgres 15; GitHub Actions uses a `postgres:15` service. SQLite remains the PR #1 baseline only. The CMS needs JSONB (custom-field values + block payloads), GIN, and `tsvector`. Prisma-on-SQLite stores `Json` as TEXT and cannot express those indexes. Dual-schema `prisma/schema.postgres.prisma` (datasource-only today) is unified into one Postgres schema.
+**CMS-02 switches the committed Prisma schema to PostgreSQL.** Fedora local default is **Podman** (`podman` / `podman-compose`) running Postgres 15; `docker compose` is an allowed alternative. GitHub Actions uses a `postgres:15` service. SQLite remains the PR #1 baseline only. The CMS needs JSONB (custom-field values + block payloads), GIN, and `tsvector`. Prisma-on-SQLite stores `Json` as TEXT and cannot express those indexes. Dual-schema `prisma/schema.postgres.prisma` (datasource-only today) is unified into one Postgres schema.
 
-Fedora: Docker or a local Postgres 15. CI: service container + `DATABASE_URL=postgresql://…`. Production was already specified as Postgres in `docs/DEPLOYMENT.md`.
+Fedora: Podman (default) or Docker, or a local Postgres 15. CI: service container + `DATABASE_URL=postgresql://…`. Production was already specified as Postgres in `docs/DEPLOYMENT.md`. `requireCapability` lands in **CMS-04** (schema role column may be added in CMS-02; enforcement is CMS-04).
 
 ---
 

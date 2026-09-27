@@ -4,7 +4,7 @@ Stacked delivery after PR #1 (`cursor/ejc-identity-platform-90e1`). Each CMS-NN 
 
 <!-- cms-canonical
 roles: SUPER_ADMIN, ADMIN, EDITOR, AUTHOR, REVIEWER, MEDIA_MANAGER
-capabilities: content.create, content.edit, content.review, content.publish, content.delete, media.upload, media.delete, users.manage, roles.manage, settings.manage, audit.read
+capabilities: content.create, content.edit, content.review, content.publish, content.delete, content.verify, media.upload, media.delete, users.manage, roles.manage, settings.manage, audit.read
 workflow: DRAFT, IN_REVIEW, APPROVED, SCHEDULED, PUBLISHED, UNPUBLISHED, ARCHIVED
 truth: VERIFIED, UNVERIFIED, TO_CONFIRM, PRIVATE
 -->
@@ -23,9 +23,10 @@ stateDiagram-v2
   DRAFT --> IN_REVIEW: submit
   IN_REVIEW --> DRAFT: request changes
   IN_REVIEW --> APPROVED: approve
+  APPROVED --> DRAFT: request changes
   APPROVED --> SCHEDULED: schedule
   APPROVED --> PUBLISHED: publish
-  SCHEDULED --> PUBLISHED: clock plus publish job
+  SCHEDULED --> PUBLISHED: POST cron job
   SCHEDULED --> APPROVED: unschedule
   PUBLISHED --> UNPUBLISHED: unpublish
   UNPUBLISHED --> PUBLISHED: republish
@@ -35,6 +36,8 @@ stateDiagram-v2
   DRAFT --> ARCHIVED: archive draft
 ```
 
+Live `PUBLISHED` rows are not edited in place. `content.edit` on a live item creates a `PendingRevision` at `DRAFT`; that copy uses the same machine until `APPROVED → PUBLISHED` swaps it onto the live row.
+
 ### Allowed transitions and who may perform them
 
 | From | To | Capability | Roles | Extra gates |
@@ -43,22 +46,44 @@ stateDiagram-v2
 | `DRAFT` | `IN_REVIEW` | `content.edit` | SUPER_ADMIN, ADMIN, EDITOR, AUTHOR (own) | — |
 | `IN_REVIEW` | `DRAFT` | `content.review` | SUPER_ADMIN, ADMIN, REVIEWER | note required |
 | `IN_REVIEW` | `APPROVED` | `content.review` | SUPER_ADMIN, ADMIN, REVIEWER | does **not** set `TruthStatus` |
+| `APPROVED` | `DRAFT` | `content.review` | SUPER_ADMIN, ADMIN, REVIEWER | request changes |
 | `APPROVED` | `SCHEDULED` | `content.publish` | SUPER_ADMIN, ADMIN | `scheduledAt` in the future |
-| `APPROVED` | `PUBLISHED` | `content.publish` | SUPER_ADMIN, ADMIN | `publishingSafetyCheck` + identity lock for biography |
-| `SCHEDULED` | `PUBLISHED` | `content.publish` (job acts as system; audit actor recorded) | SUPER_ADMIN, ADMIN to run/cancel | same safety check at fire time |
+| `APPROVED` | `PUBLISHED` | `content.publish` | SUPER_ADMIN, ADMIN | safety + identity lock; labels if not `VERIFIED` |
+| `SCHEDULED` | `PUBLISHED` | `content.publish` | SUPER_ADMIN, ADMIN to cancel; cron as system | `POST /api/cron/publish` + secret header |
 | `SCHEDULED` | `APPROVED` | `content.publish` | SUPER_ADMIN, ADMIN | clears `scheduledAt` |
 | `PUBLISHED` | `UNPUBLISHED` | `content.publish` | SUPER_ADMIN, ADMIN | explicit; public loaders drop the row |
-| `UNPUBLISHED` | `PUBLISHED` | `content.publish` | SUPER_ADMIN, ADMIN | safety check **again** (truth may have changed) |
-| `PUBLISHED` / `UNPUBLISHED` / `DRAFT` | `ARCHIVED` | `content.delete` or `content.publish` | SUPER_ADMIN, ADMIN; EDITOR: own drafts only | soft; `archivedAt` |
-| `ARCHIVED` | `DRAFT` | `content.delete` or `content.publish` | SUPER_ADMIN, ADMIN | restore; audit kept |
+| `UNPUBLISHED` | `PUBLISHED` | `content.publish` | SUPER_ADMIN, ADMIN | safety check **again** |
+| `PUBLISHED` | `ARCHIVED` | `content.publish` | SUPER_ADMIN, ADMIN | soft; `archivedAt` |
+| `UNPUBLISHED` | `ARCHIVED` | `content.publish` | SUPER_ADMIN, ADMIN | soft; `archivedAt` |
+| `DRAFT` | `ARCHIVED` | `content.delete` | SUPER_ADMIN, ADMIN; EDITOR own drafts | soft |
+| `ARCHIVED` | `DRAFT` | `content.publish` | SUPER_ADMIN, ADMIN | restore; audit kept |
+
+<!-- cms-transitions
+DRAFT:IN_REVIEW:content.edit
+IN_REVIEW:DRAFT:content.review
+IN_REVIEW:APPROVED:content.review
+APPROVED:DRAFT:content.review
+APPROVED:SCHEDULED:content.publish
+APPROVED:PUBLISHED:content.publish
+SCHEDULED:PUBLISHED:content.publish
+SCHEDULED:APPROVED:content.publish
+PUBLISHED:UNPUBLISHED:content.publish
+UNPUBLISHED:PUBLISHED:content.publish
+PUBLISHED:ARCHIVED:content.publish
+UNPUBLISHED:ARCHIVED:content.publish
+DRAFT:ARCHIVED:content.delete
+ARCHIVED:DRAFT:content.publish
+-->
+
+Truth is **not** a workflow edge. `content.verify` (SUPER_ADMIN; biography always SUPER_ADMIN) sets `VERIFIED` with provenance + `verifiedById` / `verifiedAt` / `verificationNote`. Publishing never calls it.
 
 Illegal examples: AUTHOR `IN_REVIEW` → `PUBLISHED`; REVIEWER → `PUBLISHED`; any role `DRAFT` → `PUBLISHED`; any role setting `truthStatus = VERIFIED` via the publish action.
 
 Timestamps: `submittedAt`, `reviewedAt`, `publishedAt`, `unpublishedAt`, `archivedAt` plus `WorkflowEvent` (from/to/actor/note).
 
-Scheduling: a Next.js-safe path is “check due rows on admin dashboard load + a `GET /api/cron/publish` protected by a header secret” (secret issued on the VM, not committed). No silent publish if safety fails — write `CmsObservabilityEvent` `publish_failure` and keep `SCHEDULED`.
+**Scheduler (D9).** `POST /api/cron/publish` with `x-cms-cron-secret` (value issued on the VM, not committed). Never GET. If safety fails, write `CmsObservabilityEvent` `publish_failure` and keep `SCHEDULED`.
 
-Placeholder visibility (preserves today’s NOW): public pages may show `IN_REVIEW` + `EXAMPLE` or `TO_CONFIRM` **only** when the loader opts in (NOW, homepage pending places) and the UI shows the existing banners. Those rows are not in the Ask corpus.
+**Public visibility (D1).** Only `PUBLISHED` + `PUBLIC` + not `PRIVATE` + not deleted. `IN_REVIEW` is admin-only. Today’s NOW/Challenge `REVIEW` placeholders become `PUBLISHED` + `TO_CONFIRM` (+ `EXAMPLE` where they already are) so e2e banners stay. Ask may include `approvedForAsk` rows that are `UNVERIFIED` / `TO_CONFIRM` **labelled**, never as fact.
 
 ---
 
@@ -81,7 +106,7 @@ CI: `.github/workflows/ci.yml` quality job. CMS-02 adds a Postgres service; unti
 
 | Phase | New tests |
 |---|---|
-| CMS-01 | Docs exist, 18 sections, CMS-01–12 acceptance headings, canonical RBAC/workflow/truth match, mermaid fences |
+| CMS-01 | Docs exist, 18 sections, CMS-01–12 acceptance headings, exact RBAC/workflow/truth tokens, transition×matrix cross-check, mermaid structural parse (offline; no mermaid JS renderer) |
 | CMS-02 | Schema generate; public loaders still exclude `PRIVATE` / `deletedAt`; identity lock vs `CONFIRMED`; no raw SQL |
 | CMS-03 | Magic-byte reject; SVG sanitize; path traversal; zip-slip; capability on upload |
 | CMS-04 | Role × capability table; illegal workflow transitions; publish does not flip truth; rollback appends revision |
@@ -169,10 +194,10 @@ Core DB and content services.
 Acceptance criteria:
 
 - [ ] Single Prisma schema, `provider = postgresql`
-- [ ] `prisma/migrations` created; Compose Postgres for Fedora; CI service container
+- [ ] `prisma/migrations` created; Fedora **Podman** (`podman-compose`) Postgres by default (`docker compose` alternative); CI service container
 - [ ] Additive columns + new tables from `docs/CMS-DATA-MODEL.md` applied
 - [ ] Bootstrap admin `SUPER_ADMIN`; seed still only confirmed facts + labelled examples
-- [ ] `lib/cms/content` public loaders never return `PRIVATE` or soft-deleted rows
+- [ ] `lib/cms/content` public loaders return only `PUBLISHED` + `PUBLIC` + not `PRIVATE` + not deleted; `truthStatus` is a label only
 - [ ] Identity-lock unit test: published identity/Kinshasa match `CONFIRMED`
 - [ ] Dual-write of `publishState` ↔ `workflowState` and `SourceLink` still works
 - [ ] No GraphQL / extra backend
@@ -186,9 +211,10 @@ Acceptance criteria:
 
 - [ ] `LOCAL` adapter in gitignored disk dir; S3-compatible interface implemented
 - [ ] Magic-byte sniff + declared MIME mismatch rejected
-- [ ] SVG sanitized; public render is `<img>` not inline SVG
+- [ ] SVG sanitized with `sanitize-html` (or SVG-specific allowlist on top of it); public render is `<img>` not inline SVG
 - [ ] ZIP path traversal rejected; allowlist enforced
-- [ ] Derivatives created for raster images
+- [ ] Derivatives created for raster images via `sharp`
+- [ ] Upload route handlers require matching `Origin` / `Sec-Fetch-Site` (CSRF)
 - [ ] Private assets only via signed URL; `storageKey` not in public HTML
 - [ ] `media.upload` / `media.delete` enforced
 - [ ] CSP not wildcarded; same-origin or explicit host
@@ -201,12 +227,17 @@ Workflow, revisions, RBAC.
 Acceptance criteria:
 
 - [ ] All seven workflow states exist; table of transitions enforced in `lib/cms/workflow`
-- [ ] Role × capability matrix implemented; JWT does not carry capabilities
+- [ ] `requireCapability` lands here (CMS-04); JWT does not carry capabilities
+- [ ] `content.verify` is SUPER_ADMIN-only by default; biography always SUPER_ADMIN
 - [ ] `attemptPublish` requires `content.publish` and still does not mutate truth
+- [ ] Live edits create a `PendingRevision`; publish swaps the live snapshot
+- [ ] `APPROVED → DRAFT` and `IN_REVIEW → DRAFT` exist
+- [ ] Scheduler is `POST /api/cron/publish` with secret header (never GET)
 - [ ] Schedule + unpublish + archive + restore write `WorkflowEvent` + audit
 - [ ] Rollback creates a new `ContentRevision`; history intact
 - [ ] Table-driven RBAC and illegal-transition tests
 - [ ] AUTHOR IDOR denied
+- [ ] Last SUPER_ADMIN cannot be removed; ADMIN cannot grant or downgrade SUPER_ADMIN
 
 ### CMS-05
 
@@ -243,10 +274,10 @@ Taxonomy + relationship/provenance graph.
 Acceptance criteria:
 
 - [ ] Vocabularies: category, tag, topic, industry, location, organization, role
-- [ ] `TypedRelation` unique 5-tuple; Proof Graph consumes published, non-private edges
+- [ ] `TypedRelation` unique `(fromNodeId, toNodeId, relationType)`; Proof Graph consumes published, non-private edges
 - [ ] `ProvenanceSource` has type, URL, title, date, verification, verified by/at, notes, optional media; no confidence **percent**
 - [ ] `SourceLink` dual-write still populated
-- [ ] Kinshasa `LIVED_IN` / origin `EVIDENCES` birth record remain the only verified place facts
+- [ ] Kinshasa is `BORN_IN` (confirmed), not `LIVED_IN`. Origin `EVIDENCES` birth record remains the only verified place fact. No inferred places.
 
 ### CMS-08
 
@@ -257,7 +288,8 @@ Acceptance criteria:
 - [ ] Translation entities for natives; `sourceLocale` default `FR`
 - [ ] Source edit marks the other locale `OUTDATED`
 - [ ] Admin Translations view: missing / outdated / complete
-- [ ] Public EN/FR URLs still resolve with today’s strings
+- [ ] Public EN/FR URLs still resolve with today’s strings (imported as `COMPLETE`)
+- [ ] EN `MISSING` → `/en/{slug}` 404; sitemap/hreflang omit EN; Ask falls back to FR with a locale label
 - [ ] UI chrome may remain `lib/i18n.ts`
 
 ### CMS-09
@@ -269,7 +301,7 @@ Acceptance criteria:
 - [ ] Per-content SEO title, description, canonical, OG, robots
 - [ ] Person JSON-LD still matches `CONFIRMED`
 - [ ] Sitemap still includes every current path in `app/sitemap.ts`; additive slugs only
-- [ ] Public loaders use `workflowState = PUBLISHED` (plus the NOW placeholder exception)
+- [ ] Public loaders use `workflowState = PUBLISHED` + `visibility = PUBLIC` + not `PRIVATE` (no `IN_REVIEW` public exception)
 - [ ] `revalidatePath` on publish/unpublish for affected locale routes
 - [ ] No duplicate canonicals
 
@@ -280,8 +312,8 @@ Ask EJC knowledge integration.
 Acceptance criteria:
 
 - [ ] `/api/ask` loads corpus only via `lib/cms/ask-corpus.ts`
-- [ ] Filter: published + not private + public visibility + `approvedForAsk` + not EXAMPLE + not deleted
-- [ ] Unverified / to-confirm answers labelled; never stated as fact
+- [ ] Filter: `PUBLISHED` + `PUBLIC` + not `PRIVATE` + `approvedForAsk` + not EXAMPLE + not deleted (`truthStatus` labels only)
+- [ ] Unverified / to-confirm answers are included when approved and labelled; never stated as fact
 - [ ] Private content not returned even if an admin is logged in
 - [ ] Existing Ask e2e (Kinshasa answer, net-worth refusal) passes
 - [ ] Still no generative hallucination path unless owner later authorizes a model
@@ -311,17 +343,39 @@ Acceptance criteria:
 - [ ] Dual-write can be disabled behind a flag after soak
 - [ ] Column drops **not** done without owner authorization
 - [ ] Full gate: lint, typecheck, unit, integration/RBAC/security/migration tests, e2e desktop+mobile FR+EN, build
-- [ ] Fedora local validation documented against Compose Postgres
+- [ ] Fedora local validation documented against Podman/`podman-compose` Postgres (`docker compose` alternative)
 - [ ] No production deploy from the PR; no secrets committed
 
 ---
 
 ## Next executable phase
 
-**CMS-02 — Core DB / content services:** switch Prisma to PostgreSQL (Compose + CI service), add migrations for additive columns and new tables, implement `lib/cms` public loaders + identity lock test, keep dual-write of legacy `publishState` / `SourceLink`, do not build the full editor yet.
+**CMS-02 — Core DB / content services:** switch Prisma to PostgreSQL (Fedora Podman/`podman-compose` + CI service), add migrations for additive columns and new tables (`ContentNode`, `PendingRevision`, verify columns), implement `lib/cms` public loaders + identity lock test, keep dual-write of legacy `publishState` / `SourceLink`, do not build the full editor yet. `requireCapability` waits for CMS-04.
 
 ---
 
-## Owner gates (not required to start CMS-02)
+## Resolved technical decisions (not owner gates)
 
-See the report’s open decisions. Engineering can implement CMS-02 from this package without new biography, without production credentials, and without merging PR #1.
+| Topic | Decision | Why |
+|---|---|---|
+| Audit diff format | **JSON Patch RFC 6902** in `AuditLog.payload` TEXT; **full snapshot** always on `ContentRevision` / `PendingRevision` | Standard, small, unit-testable diffs. Rollback must not reconstruct from a patch chain. |
+| Scheduler | **`POST /api/cron/publish`** + `x-cms-cron-secret` | State-changing GET is forbidden. Header secret stays on the VM. |
+| Rich-text sanitiser | **`sanitize-html`** | Maintained allowlist sanitiser that runs in Node without jsdom. |
+| Image variants | **`sharp`** | libvips, de facto Next.js pipeline, JPEG/PNG/WebP/AVIF. |
+| Fedora DB | **Podman / `podman-compose`** default; `docker compose` alternative | Fedora’s default container stack. |
+| SUPER_ADMIN integrity | ADMIN cannot grant, disable, or downgrade SUPER_ADMIN; last SUPER_ADMIN cannot be removed | Privilege-escalation control. |
+| `requireCapability` | **CMS-04** | Schema `role` may be added in CMS-02; enforcement with workflow. |
+
+---
+
+## Open decisions requiring the owner
+
+Only genuine authorization, content, or merge/deploy questions. Each has a recommended default so CMS-02 can start.
+
+1. **Production object storage** (provider, bucket, credentials) at CMS-03. **Default:** S3-compatible API behind the existing adapter; credentials issued on the VM, never committed.
+2. **Phase F column drops and purges** after CMS-12 soak. **Default:** do not drop leftover dual-write columns or purge soft-deleted media until the owner authorizes.
+3. **Generative model for Ask EJC.** **Default:** none. Keep `retrieveFromApprovedSources` until the owner authorizes a model.
+4. **Whether the identity lock ever moves from `lib/identity.ts` to the DB.** **Default:** lock stays in code; CMS rows must match `CONFIRMED`.
+5. **Owner-supplied facts and media** for new content types (principles, extra places, portrait, etc.). **Default:** empty labelled placeholders only; never invent.
+6. **Merge / deploy / retarget PR #2 to `main`.** **Default:** no merge and no deploy from this package; retarget after PR #1 merges, on owner approval.
+7. **Whether ADMIN may hold `content.verify`.** **Default: no.** Biography and identity verification remain SUPER_ADMIN-only even if this is later flipped for other types.

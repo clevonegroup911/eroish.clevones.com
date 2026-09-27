@@ -4,7 +4,7 @@ Keeps every PR #1 control (`middleware.ts`, `lib/csp.ts`, `lib/auth-cookie.ts`, 
 
 <!-- cms-canonical
 roles: SUPER_ADMIN, ADMIN, EDITOR, AUTHOR, REVIEWER, MEDIA_MANAGER
-capabilities: content.create, content.edit, content.review, content.publish, content.delete, media.upload, media.delete, users.manage, roles.manage, settings.manage, audit.read
+capabilities: content.create, content.edit, content.review, content.publish, content.delete, content.verify, media.upload, media.delete, users.manage, roles.manage, settings.manage, audit.read
 workflow: DRAFT, IN_REVIEW, APPROVED, SCHEDULED, PUBLISHED, UNPUBLISHED, ARCHIVED
 truth: VERIFIED, UNVERIFIED, TO_CONFIRM, PRIVATE
 -->
@@ -39,6 +39,7 @@ flowchart LR
 | `content.review` | yes | yes | no | no | yes | no |
 | `content.publish` | yes | yes | no | no | no | no |
 | `content.delete` | yes | yes | soft-delete own drafts | no | no | no |
+| `content.verify` | yes | no | no | no | no | no |
 | `media.upload` | yes | yes | yes | yes | no | yes |
 | `media.delete` | yes | yes | no | no | no | yes |
 | `users.manage` | yes | yes | no | no | no | no |
@@ -46,15 +47,25 @@ flowchart LR
 | `settings.manage` | yes | yes | no | no | no | no |
 | `audit.read` | yes | yes | no | no | yes | no |
 
+<!-- cms-rbac-matrix
+SUPER_ADMIN: content.create, content.edit, content.review, content.publish, content.delete, content.verify, media.upload, media.delete, users.manage, roles.manage, settings.manage, audit.read
+ADMIN: content.create, content.edit, content.review, content.publish, content.delete, media.upload, media.delete, users.manage, settings.manage, audit.read
+EDITOR: content.create, content.edit, content.delete, media.upload
+AUTHOR: content.create, content.edit, media.upload
+REVIEWER: content.review, audit.read
+MEDIA_MANAGER: media.upload, media.delete
+-->
+
 Notes:
 
-- **SUPER_ADMIN** is the only role that assigns/changes roles (`roles.manage`). The seeded bootstrap user becomes `SUPER_ADMIN`.
-- **ADMIN** operates the control plane (publish, users except role grant, settings) but cannot promote themselves to change the role graph.
-- **EDITOR** may edit others’ `DRAFT` / `IN_REVIEW` copy; cannot publish or review-approve.
-- **AUTHOR** creates and edits **own** `DRAFT` rows; submit to `IN_REVIEW` only.
-- **REVIEWER** transitions `IN_REVIEW` → `APPROVED` or back to `DRAFT`; cannot publish.
+- **SUPER_ADMIN** is the only role that assigns/changes roles (`roles.manage`). The seeded bootstrap user becomes `SUPER_ADMIN`. An ADMIN cannot grant `SUPER_ADMIN`, and cannot disable or downgrade a SUPER_ADMIN. The last SUPER_ADMIN cannot be removed.
+- **ADMIN** operates the control plane (publish, users except role grant, settings) but cannot promote themselves. `content.verify` is **not** granted to ADMIN unless the owner later decides (default: no; see `docs/CMS-IMPLEMENTATION-PLAN.md` owner list).
+- **EDITOR** may edit others’ `DRAFT` / `IN_REVIEW` copy and create a `PendingRevision` on live items; cannot publish, review-approve, or verify.
+- **AUTHOR** creates and edits **own** `DRAFT` rows (including a working copy they authored); submit to `IN_REVIEW` only.
+- **REVIEWER** transitions `IN_REVIEW` → `APPROVED` or back to `DRAFT`, and `APPROVED` → `DRAFT`; cannot publish or verify.
 - **MEDIA_MANAGER** uploads/deletes assets; cannot publish identity facts.
-- High-risk biography fields (name, birth, nationality, org) require `content.publish` **and** the identity lock test (`lib/identity.ts` `CONFIRMED`).
+- **`content.verify`** (D2): SUPER_ADMIN only by default. Biography and identity claims are **always** SUPER_ADMIN, even if ADMIN later receives `content.verify` for other types. Setting `VERIFIED` requires at least one attached `ProvenanceSource` (or `OWNER_CONFIRMED` attestation), writes `verifiedById` / `verifiedAt` / `verificationNote` on the entity, and is audited. Publishing never changes `truthStatus`.
+- High-risk biography fields (name, birth, nationality, org) require `content.publish` for going live **and** `content.verify` to be labelled as fact, plus the identity lock (`lib/identity.ts` `CONFIRMED`).
 - Learning Engine proposals still need a human (`decideLearningProposal` today); capability `settings.manage` or `content.publish` (ADMIN+) to approve. The engine never publishes.
 
 ### Session compatibility
@@ -63,7 +74,7 @@ Notes:
 |---|---|
 | `verifyAdminToken` | Unchanged |
 | `findActiveSession` / `requireAdmin` | Unchanged as the floor; every admin page still calls it |
-| `attemptPublish` | Add `requireCapability("content.publish")` |
+| `attemptPublish` | Add `requireCapability("content.publish")` in **CMS-04** |
 | `updateIdentityTagline` | `content.edit` |
 | `moderateChallenge` | `content.review` |
 | `decideLearningProposal` | `content.publish` or `settings.manage` |
@@ -97,9 +108,9 @@ Every threat in CMS mandate §17. Mitigation **and** a test. Existing tests stay
 
 | | |
 |---|---|
-| Threat | Cross-site POST triggers publish/login/upload. |
-| Mitigation | Same-origin admin; cookie `SameSite=lax` (`adminSessionCookieOptions`); server actions are origin-bound; login is JSON POST same-origin. Do not add CORS for admin mutations. `form-action 'self'` in CSP. |
-| Test | Existing login e2e; CMS-04: action without session cookie returns redirect/401; document that cross-site form cannot include the cookie on lax POST from other sites (classic navigation CSRF on GET-logout already uses POST). |
+| Threat | Cross-site POST triggers publish/login/upload/cron. |
+| Mitigation | Same-origin admin; cookie `SameSite=lax` (`adminSessionCookieOptions`); server actions are origin-bound. **New admin route handlers** (CMS-03 uploads, CMS-04 JSON, CMS-04 scheduler) reject the request unless `Origin` equals `APP_ORIGIN` or `Sec-Fetch-Site` is `same-origin` / `none` (no Origin on same-site navigations is allowed only for server actions, not for upload/cron). Do not add CORS for admin mutations. `form-action 'self'` in CSP. Scheduler is `POST /api/cron/publish` with `x-cms-cron-secret` (or `Authorization: Bearer`); **never GET**. |
+| Test | Existing login e2e; CMS-03/04: upload without matching Origin is 403; cron GET is 405; cron POST without secret is 401; action without session cookie returns redirect/401. |
 
 ### SSRF
 
@@ -114,8 +125,8 @@ Every threat in CMS mandate §17. Mitigation **and** a test. Existing tests stay
 | | |
 |---|---|
 | Threat | String-concatenated SQL. |
-| Mitigation | Prisma parameterized client only (`lib/db.ts`). No `$executeRaw` except the existing SQLite `PRAGMA` (removed on Postgres). Search uses Prisma `contains` / `tsvector` params. |
-| Test | CMS-02: grep gate that `lib/cms` has no unparameterized raw SQL; existing unit suite still passes. |
+| Mitigation | Prisma parameterized client only (`lib/db.ts`). Today the code uses `$executeRawUnsafe("PRAGMA busy_timeout = 15000")` — a **constant** string, no interpolated input. Rule: `$executeRawUnsafe` is allowed only with a compile-time constant; never interpolate request, filename, or SQL fragments. CMS-02 on Postgres **removes** that PRAGMA and prefers `$executeRaw` tagged templates if any raw SQL remains. Search uses Prisma `contains` / `tsvector` params. |
+| Test | CMS-02: grep `lib/` + `lib/cms` for `$executeRawUnsafe` / `$executeRaw`; any remaining call must be a constant; existing unit suite still passes. |
 
 ### Malicious uploads
 
@@ -217,7 +228,7 @@ Every threat in CMS mandate §17. Mitigation **and** a test. Existing tests stay
 
 | Event | Audit | Revision |
 |---|---|---|
-| Create / update / translate | yes (before/after or RFC6902-style diff in `payload` TEXT) | yes, full snapshot, monotonic `version` |
+| Create / update / translate | yes (JSON Patch RFC 6902 in `payload` TEXT) | yes, full snapshot, monotonic `version` |
 | Workflow transition | yes + `WorkflowEvent` row | snapshot of states |
 | Publish / unpublish / archive / restore | yes | yes |
 | Publish blocked | yes (`PUBLISH_BLOCKED`, reasons) — already exists | no |
@@ -247,13 +258,13 @@ From `x-request-path` (middleware already sets it, then strips from the response
 ```
 approvedForAsk = true
 AND workflowState = PUBLISHED
-AND truthStatus != PRIVATE
 AND visibility = PUBLIC
+AND truthStatus != PRIVATE
 AND exampleFlag != EXAMPLE
 AND deletedAt IS NULL
 ```
 
-The route **must not** take a `session` parameter that widens the set. Unverified/to-confirm public rows, if `approvedForAsk`, are returned with an explicit label — never as established fact. No source → existing refusal copy (`lib/i18n.ts` `ask.refusal`).
+Visibility is `PUBLISHED` + `PUBLIC` + not deleted + not `PRIVATE`. `truthStatus` is the **label** (mandate §19 requires public unverified/to-confirm). The route **must not** take a `session` parameter that widens the set. `UNVERIFIED` / `TO_CONFIRM` answers, if `approvedForAsk`, are returned with an explicit label — never as established fact. No source → existing refusal copy (`lib/i18n.ts` `ask.refusal`).
 
 ---
 
