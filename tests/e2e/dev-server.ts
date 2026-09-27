@@ -69,16 +69,27 @@ async function waitUntilListening() {
   throw new Error("e2e server did not start");
 }
 
+const COMPILE_ERROR =
+  /Unexpected end of JSON|InvariantError|Runtime SyntaxError|Failed to generate static paths|clientReferenceManifest/i;
+
+async function warmRoute(route: string) {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    try {
+      const res = await fetch(`${origin}${route}`);
+      const body = await res.text();
+      const usable = res.ok || (res.status >= 300 && res.status < 400);
+      if (usable && !COMPILE_ERROR.test(body)) return;
+    } catch {
+      // retry while Next compiles
+    }
+    await sleep(1000);
+  }
+}
+
 async function warmup() {
-  for (const route of WARMUP) {
-    for (let attempt = 0; attempt < 6; attempt += 1) {
-      try {
-        const res = await fetch(`${origin}${route}`);
-        if (res.ok || (res.status >= 300 && res.status < 400)) break;
-      } catch {
-        // retry while Next compiles
-      }
-      await sleep(750);
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (const route of WARMUP) {
+      await warmRoute(route);
     }
   }
 }

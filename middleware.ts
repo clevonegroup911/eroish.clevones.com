@@ -27,11 +27,11 @@ function applySecurity(request: NextRequest, response: NextResponse, nonce: stri
   return response;
 }
 
-function relativeRedirect(request: NextRequest, location: string, nonce: string, csp: string) {
-  const target = new URL(location, request.nextUrl);
-  const response = NextResponse.redirect(target);
-  response.headers.set("Location", location);
-  return applySecurity(request, response, nonce, csp);
+function redirectUsingRequest(request: NextRequest, pathname: string, search: string, nonce: string, csp: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = search;
+  return applySecurity(request, NextResponse.redirect(url), nonce, csp);
 }
 
 export async function middleware(request: NextRequest) {
@@ -76,7 +76,7 @@ export async function middleware(request: NextRequest) {
     const session = token ? await verifyAdminToken(token) : null;
     if (!session) {
       const next = encodeURIComponent(pathname);
-      return relativeRedirect(request, `/admin/login?next=${next}`, nonce, csp);
+      return redirectUsingRequest(request, "/admin/login", `?next=${next}`, nonce, csp);
     }
     return pass();
   }
@@ -88,7 +88,7 @@ export async function middleware(request: NextRequest) {
 
   const locale = negotiateLocale(request.headers.get("accept-language")) || defaultLocale;
   const suffix = pathname === "/" ? "" : pathname;
-  return relativeRedirect(request, `/${locale}${suffix}`, nonce, csp);
+  return redirectUsingRequest(request, `/${locale}${suffix}`, "", nonce, csp);
 }
 
 export const config = {
