@@ -17,7 +17,7 @@ export type Dictionary = typeof en;
 
 const en = {
   meta: {
-    title: "Eroish J Clevone — EJC",
+    title: "Eroish J Clevone — official public identity",
     description:
       "Official public identity of Eroish Clevone Jeamson. Public name Eroish J Clevone. Signature EJC. Congolese entrepreneur, businessman, builder, Founder/CEO.",
   },
@@ -72,8 +72,10 @@ const en = {
     proof: "Proof",
     thinking: "Thinking",
     principles: "Principles",
-    ask: "Ask EJC",
-    challenge: "Challenge me",
+    ask: "Ask",
+    challenge: "Challenge",
+    menu: "Menu",
+    close: "Close",
     connect: "Connect",
     signal: "Signal",
     journey: "Journey",
@@ -105,11 +107,11 @@ const en = {
     associatedWith: "Associated with",
     nationality: "Congolese",
     multicultural:
-      "Grew up and lived across different countries, cities and provinces — a multicultural, cosmopolitan Third Culture Kid fact. Other specific places are not confirmed.",
+      "Grew up and lived across different countries, cities and provinces as a multicultural, cosmopolitan Third Culture Kid. Other specific places are not confirmed.",
   },
   now: {
     title: "Now",
-    lead: "What is moving right now — focus, objective, challenge, decision, latest action, result, lesson, signal.",
+    lead: "What is moving right now — objective, focus, decision, challenge, latest action, result, lesson, signal.",
     empty: "No published Now item yet. Nothing here is invented to look current.",
     exampleBanner: "Example data — not a live claim. Needs confirmation before it can be treated as fact.",
   },
@@ -232,7 +234,7 @@ const en = {
   },
   places: {
     title: "Places",
-    lead: "Born in Kinshasa. Grew up and lived across different countries, cities and provinces — a multicultural, cosmopolitan Third Culture Kid fact. Other specific places are not named.",
+    lead: "Born in Kinshasa. Grew up and lived across different countries, cities and provinces as a multicultural, cosmopolitan Third Culture Kid. Other specific places are not named.",
     confirmed: "Confirmed",
     needs: "Needs confirmation",
     mapCaption: "Schematic, not to scale. Only confirmed places are shown.",
@@ -289,7 +291,7 @@ const en = {
 
 const fr: Dictionary = {
   meta: {
-    title: "Eroish J Clevone — EJC",
+    title: "Eroish J Clevone — identité publique officielle",
     description:
       "Identité publique officielle d’Eroish Clevone Jeamson. Nom public Eroish J Clevone. Signature EJC. Entrepreneur congolais, homme d’affaires, bâtisseur, fondateur et CEO.",
   },
@@ -301,7 +303,7 @@ const fr: Dictionary = {
     title: "Fondateur et CEO",
   },
   nowKinds: {
-    FOCUS: "Focalisation",
+    FOCUS: "Priorité",
     OBJECTIVE: "Objectif",
     CHALLENGE: "Défi",
     DECISION: "Décision",
@@ -344,9 +346,11 @@ const fr: Dictionary = {
     proof: "Preuves",
     thinking: "Pensée",
     principles: "Principes",
-    ask: "Demander à EJC",
-    challenge: "Me challenger",
+    ask: "Demander",
+    challenge: "Défier EJC",
     connect: "Joindre",
+    menu: "Menu",
+    close: "Fermer",
     signal: "Signal",
     journey: "Parcours",
     places: "Lieux",
@@ -370,9 +374,9 @@ const fr: Dictionary = {
     confirmedTitle: "Ce qui est établi",
     unconfirmedTitle: "Ce qui n’est pas encore confirmé",
     unconfirmedBody:
-      "Formation, chronologie de jeunesse, autres lieux, distinctions, médias et autres affirmations restent des placeholders structurés jusqu’à confirmation sourcée par EJC.",
+      "Formation, chronologie de jeunesse, autres lieux, distinctions, médias et autres affirmations restent des emplacements réservés structurés jusqu’à confirmation sourcée par EJC.",
     systemsTitle: "Les systèmes publics",
-    portraitCaption: "Portrait à fournir — placeholder honnête, pas un visage de banque d’images.",
+    portraitCaption: "Portrait à fournir — emplacement réservé honnête, pas un visage de banque d’images.",
     bornIn: "Né à",
     associatedWith: "Associé à",
     nationality: "Congolais",
@@ -381,7 +385,7 @@ const fr: Dictionary = {
   },
   now: {
     title: "Maintenant",
-    lead: "Ce qui bouge maintenant — focus, objectif, défi, décision, dernière action, résultat, leçon, signal.",
+    lead: "Ce qui bouge maintenant — objectif, priorité, décision, défi, dernière action, résultat, leçon, signal.",
     empty: "Aucun élément Now publié. Rien n’est inventé pour simuler l’actualité.",
     exampleBanner: "Donnée d’exemple — pas une affirmation vivante. Confirmation requise avant d’être un fait.",
   },
@@ -437,7 +441,7 @@ const fr: Dictionary = {
     revisions: "Révisions",
   },
   challenge: {
-    title: "Challenger EJC",
+    title: "Défier EJC",
     lead: "Certaines thèses peuvent être questionnées, challengées, documentées ou contredites. Modéré. Pas un réseau social.",
     versions: "Historique de la thèse",
     submit: "Envoyer un challenge",
@@ -523,7 +527,7 @@ const fr: Dictionary = {
   },
   principles: {
     title: "Principes",
-    lead: "La plateforme suit un cycle documenté. Les principes personnels restent des placeholders jusqu’à ce qu’EJC les écrive.",
+    lead: "La plateforme suit un cycle documenté. Les principes personnels restent des emplacements réservés jusqu’à ce qu’EJC les écrive.",
     platform: "Cycle d’exploitation de la plateforme",
     personal: "Principes personnels",
     personalEmpty: "Aucun principe personnel confirmé n’a été publié.",
@@ -592,7 +596,7 @@ export const exploreItems: Record<
     { href: "/fr/thinking", label: "Ma pensée", keywords: "pensee essais" },
     { href: "/fr/principles", label: "Mes principes", keywords: "principes philosophie" },
     { href: "/fr/ask", label: "Demander à EJC", keywords: "demander question source" },
-    { href: "/fr/challenge", label: "Me challenger", keywords: "challenge these" },
+    { href: "/fr/challenge", label: "Défier EJC", keywords: "defier these" },
     { href: "/fr/connect", label: "Joindre", keywords: "contact intention" },
     { href: "/fr/journey", label: "Parcours", keywords: "parcours chapitres" },
     { href: "/fr/places", label: "Lieux", keywords: "lieux carte kinshasa" },

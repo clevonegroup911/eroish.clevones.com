@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 
 import { prisma } from "@/lib/db";
 import { isMeaningfulEngagement, proposalFromSignals } from "@/lib/learning";

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 
 import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";

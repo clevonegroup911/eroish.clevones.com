@@ -18,10 +18,11 @@ describe("verifyAdminToken", () => {
   });
 
   it("accepts a freshly signed token", async () => {
-    const token = await signAdminToken("user-1", "admin@localhost");
+    const token = await signAdminToken("user-1", "admin@localhost", "session-1");
     await expect(verifyAdminToken(token)).resolves.toEqual({
       userId: "user-1",
       email: "admin@localhost",
+      jti: "session-1",
     });
   });
 
@@ -35,6 +36,7 @@ describe("verifyAdminToken", () => {
     const token = await new SignJWT({ email: "admin@localhost" })
       .setProtectedHeader({ alg: "HS256" })
       .setSubject("user-1")
+      .setJti("session-expired")
       .setIssuedAt(Math.floor(Date.now() / 1000) - 7200)
       .setExpirationTime(Math.floor(Date.now() / 1000) - 60)
       .sign(getAuthSecret());

@@ -4,8 +4,16 @@ import { safeRelativePath } from "@/lib/safe-relative-path";
 
 export const dynamic = "force-dynamic";
 
+function encodeLoginNext(to: string): string {
+  if (!to.startsWith("/admin/login")) return to;
+  const parsed = new URL(to, "http://ejc.invalid");
+  const next = parsed.searchParams.get("next");
+  if (!next) return to;
+  return `/admin/login?next=${encodeURIComponent(next)}`;
+}
+
 function redirectTo(request: Request) {
-  const to = safeRelativePath(new URL(request.url).searchParams.get("to"));
+  const to = encodeLoginNext(safeRelativePath(new URL(request.url).searchParams.get("to")));
   return new NextResponse(null, {
     status: 307,
     headers: { Location: to },

@@ -1,15 +1,7 @@
-import { z } from "zod";
+import { CONNECT_INTENTS } from "@/lib/connect-intents";
+import { z } from "@/lib/zod";
 
-export const CONNECT_INTENTS = [
-  "BUSINESS",
-  "INTRODUCTION",
-  "INVITATION",
-  "MEDIA",
-  "IDEA",
-  "OPPORTUNITY",
-  "MEETING",
-  "OTHER",
-] as const;
+export { CONNECT_INTENTS };
 
 export const connectSchema = z.object({
   intent: z.enum(CONNECT_INTENTS),

@@ -11,10 +11,15 @@ export function getAuthSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-export async function signAdminToken(userId: string, email: string): Promise<string> {
+export async function signAdminToken(
+  userId: string,
+  email: string,
+  jti: string = crypto.randomUUID(),
+): Promise<string> {
   return new SignJWT({ email })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(userId)
+    .setJti(jti)
     .setIssuedAt()
     .setExpirationTime(`${ADMIN_SESSION_TTL_SECONDS}s`)
     .sign(getAuthSecret());
@@ -22,12 +27,14 @@ export async function signAdminToken(userId: string, email: string): Promise<str
 
 export async function verifyAdminToken(
   token: string,
-): Promise<{ userId: string; email: string } | null> {
+): Promise<{ userId: string; email: string; jti: string } | null> {
   if (!token || token.length < 16) return null;
   try {
     const { payload } = await jwtVerify(token, getAuthSecret());
-    if (!payload.sub || typeof payload.email !== "string") return null;
-    return { userId: payload.sub, email: payload.email };
+    if (!payload.sub || typeof payload.email !== "string" || typeof payload.jti !== "string") {
+      return null;
+    }
+    return { userId: payload.sub, email: payload.email, jti: payload.jti };
   } catch {
     return null;
   }

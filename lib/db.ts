@@ -9,6 +9,10 @@ export const prisma =
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 
+if (process.env.DATABASE_URL?.startsWith("file:")) {
+  void prisma.$executeRawUnsafe("PRAGMA busy_timeout = 15000");
+}
+
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }

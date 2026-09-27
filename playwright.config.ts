@@ -44,6 +44,6 @@ export default defineConfig({
     command: "npx tsx tests/e2e/dev-server.ts",
     url: `${origin}/health`,
     reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",
-    timeout: 180_000,
+    timeout: Number(process.env.E2E_WEBSERVER_TIMEOUT ?? 300_000),
   },
 });

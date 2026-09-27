@@ -17,7 +17,7 @@ export async function sectionMetadata(
   const { locale, dict } = await localeContext(params);
   const { title, description } = pick(dict);
   return {
-    title,
+    title: /EJC/i.test(title) ? { absolute: title } : title,
     description,
     alternates: {
       languages: {

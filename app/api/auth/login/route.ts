@@ -1,11 +1,11 @@
 import argon2 from "argon2";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
+import { writeAudit } from "@/lib/audit";
 import { hashToken } from "@/lib/auth-node";
 import { ADMIN_SESSION_COOKIE, signAdminToken } from "@/lib/auth";
-import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
+import { z } from "@/lib/zod";
 
 const schema = z.object({
   email: z
@@ -29,9 +29,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "failed" }, { status: 401 });
   }
 
-  const token = await signAdminToken(user.id, user.email);
+  const sessionId = crypto.randomUUID();
+  const token = await signAdminToken(user.id, user.email, sessionId);
   await prisma.session.create({
     data: {
+      id: sessionId,
       userId: user.id,
       tokenHash: hashToken(token),
       expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000),

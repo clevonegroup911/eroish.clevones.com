@@ -19,7 +19,7 @@ const MANDATE_SOURCE = {
 };
 
 const NOW_KIND_TITLES: Record<string, { EN: string; FR: string }> = {
-  FOCUS: { EN: "Focus", FR: "Focalisation" },
+  FOCUS: { EN: "Focus", FR: "Priorité" },
   OBJECTIVE: { EN: "Objective", FR: "Objectif" },
   CHALLENGE: { EN: "Challenge", FR: "Défi" },
   DECISION: { EN: "Decision", FR: "Décision" },
@@ -58,7 +58,7 @@ async function main() {
         summary:
           "Congolese entrepreneur, businessman and builder. Founder/CEO. Associated with CLEVONE SARL. The public record states only what can be verified.",
         multiculturalNote:
-          "Born in Kinshasa. Grew up and lived across different countries, cities and provinces — a multicultural, cosmopolitan, Third Culture Kid fact. Other specific places are not confirmed.",
+          "Born in Kinshasa. Grew up and lived across different countries, cities and provinces as a multicultural, cosmopolitan Third Culture Kid. Other specific places are not confirmed.",
         portraitCaption: "Portrait to be supplied — honest placeholder.",
         publishState: "PUBLISHED",
         verification: "VERIFIED",
@@ -80,7 +80,7 @@ async function main() {
           "Entrepreneur congolais, homme d’affaires et bâtisseur. Fondateur et CEO. Associé à CLEVONE SARL. Le registre public n’énonce que ce qui peut être vérifié.",
         multiculturalNote:
           "Né à Kinshasa. A grandi et vécu dans différents pays, villes et provinces — un fait multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas confirmés.",
-        portraitCaption: "Portrait à fournir — placeholder honnête.",
+        portraitCaption: "Portrait à fournir — emplacement réservé honnête.",
         publishState: "PUBLISHED",
         verification: "VERIFIED",
         exampleFlag: "LIVE",
@@ -267,7 +267,7 @@ async function main() {
           body:
             locale === "EN"
               ? "Structured placeholder. No current focus, objective, or result is invented. Edit from admin when EJC confirms a live item and a source."
-              : "Placeholder structuré. Aucun focus, objectif ou résultat actuel n’est inventé. À éditer depuis l’admin lorsque EJC confirme un élément sourcé.",
+              : "Emplacement réservé structuré. Aucun axe, objectif ou résultat actuel n’est inventé. À éditer depuis l’admin lorsque EJC confirme un élément sourcé.",
           occurredOn: null,
           publishState: "REVIEW",
           verification: "NEEDS_CONFIRMATION",
@@ -317,7 +317,7 @@ async function main() {
           titleEn: "Example thesis — needs confirmation",
           titleFr: "Thèse d’exemple — à confirmer",
           bodyEn: "EXAMPLE DATA. Version 1 placeholder.",
-          bodyFr: "DONNÉE D’EXEMPLE. Version 1 placeholder.",
+          bodyFr: "DONNÉE D’EXEMPLE. Version 1 — emplacement réservé.",
           noteEn: "Seeded structure only.",
           noteFr: "Structure d’amorçage uniquement.",
         },
@@ -382,7 +382,7 @@ async function main() {
         slug: "origin-facts",
         titleEn: "Confirmed origin",
         titleFr: "Origine confirmée",
-        bodyEn: `Born in Kinshasa, Democratic Republic of the Congo, on 1 September 1994. Grew up and lived across different countries, cities and provinces — a multicultural, cosmopolitan, Third Culture Kid fact. Other specific places are not confirmed.`,
+        bodyEn: `Born in Kinshasa, Democratic Republic of the Congo, on 1 September 1994. Grew up and lived across different countries, cities and provinces as a multicultural, cosmopolitan Third Culture Kid. Other specific places are not confirmed.`,
         bodyFr: `Né à Kinshasa, République démocratique du Congo, le 1er septembre 1994. A grandi et vécu dans différents pays, villes et provinces — un fait multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas confirmés.`,
         canonicalUrl: "/en/places",
         tags: "born kinshasa 1994 origin birthplace drc congo multicultural cosmopolitan third culture kid",

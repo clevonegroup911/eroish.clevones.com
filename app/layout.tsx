@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { IBM_Plex_Sans, Newsreader } from "next/font/google";
+import localFont from "next/font/local";
 
 import { CONFIRMED, personJsonLd } from "@/lib/identity";
 import { defaultLocale, isLocale } from "@/lib/i18n";
@@ -8,16 +8,23 @@ import { publicSiteUrl } from "@/lib/site-url";
 
 import "./globals.css";
 
-const plex = IBM_Plex_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+const plex = localFont({
+  src: [
+    { path: "./fonts/ibm-plex-sans-latin-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/ibm-plex-sans-latin-500.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/ibm-plex-sans-latin-600.woff2", weight: "600", style: "normal" },
+  ],
   variable: "--font-plex",
   display: "swap",
 });
 
-const newsreader = Newsreader({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const newsreader = localFont({
+  src: [
+    { path: "./fonts/newsreader-latin-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/newsreader-latin-500.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/newsreader-latin-600.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/newsreader-latin-700.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-newsreader",
   display: "swap",
 });
@@ -29,7 +36,7 @@ const origin = publicSiteUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(origin),
   title: {
-    default: "Eroish J Clevone — EJC",
+    default: "Eroish J Clevone",
     template: "%s · EJC",
   },
   description:

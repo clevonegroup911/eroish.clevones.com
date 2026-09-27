@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { ExploreLayer } from "@/components/explore/explore-layer";
+import { MobileNav } from "@/components/layout/mobile-nav";
 import type { Dictionary, Locale } from "@/lib/i18n";
 
 export function SiteHeader({
@@ -17,7 +18,7 @@ export function SiteHeader({
 
   return (
     <header
-      className={`flex items-center justify-between gap-4 border-b px-5 py-4 md:px-8 ${
+      className={`relative flex items-center justify-between gap-4 border-b px-5 py-4 md:px-8 ${
         inverted ? "border-white/20 text-paper" : "border-rule text-ink"
       }`}
     >
@@ -33,6 +34,7 @@ export function SiteHeader({
         <Link href={`${prefix}/connect`}>{dict.nav.connect}</Link>
       </nav>
       <div className="flex items-center gap-3">
+        <MobileNav locale={locale} dict={dict} />
         <ExploreLayer locale={locale} dict={dict} />
         <Link
           href={`/${other}`}

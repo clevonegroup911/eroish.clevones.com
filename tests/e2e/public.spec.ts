@@ -28,6 +28,9 @@ test.describe("public identity", () => {
     await expect(
       page.getByText(/Grew up and lived across different countries, cities and provinces/).first(),
     ).toBeVisible();
+    await expect(page.locator('[data-chapter="builder"]')).toContainText("Needs confirmation");
+    await expect(page.locator('[data-chapter="record"]')).not.toContainText("Verified");
+    await expect(page.locator('[data-chapter="record"]')).not.toContainText("Needs confirmation");
     await shot(page, `journey_timeline${suffix}`);
 
     await page.goto("/en/places");
@@ -86,6 +89,15 @@ test.describe("public identity", () => {
     await expect(page.locator("body")).not.toContainText("BUILD. LEAD. EXECUTE.");
     await expect(page.getByText(/grandi et vécu dans différents pays, villes et provinces/).first()).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "fr");
+    if (testInfo.project.name === "mobile") {
+      const menu = page.getByRole("button", { name: "Menu" });
+      await expect(menu).toHaveAttribute("aria-expanded", "false");
+      await menu.click();
+      await expect(menu).toHaveAttribute("aria-expanded", "true");
+      await expect(page.getByRole("navigation", { name: "Menu" }).getByRole("link", { name: "Qui je suis" })).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(menu).toHaveAttribute("aria-expanded", "false");
+    }
     await shot(
       page,
       testInfo.project.name === "mobile" ? "homepage_fr_mobile" : "homepage_fr_desktop",
@@ -128,5 +140,33 @@ test.describe("public identity", () => {
     expect(await nowTitle.text()).toMatch(/<title>[^<]*Now/i);
     const frNow = await request.get("/fr/now");
     expect(await frNow.text()).toMatch(/<title>[^<]*Maintenant/i);
+    const titles = new Set<string>();
+    for (const path of ["/en", "/fr", "/admin/login", "/en/ask", "/fr/ask", "/en/now", "/fr/now"]) {
+      const html = await (await request.get(path)).text();
+      const title = /<title>([^<]+)<\/title>/.exec(html)?.[1] ?? "";
+      expect(title, path).not.toMatch(/EJC · EJC|Ask EJC · EJC/i);
+      expect(titles.has(title), `${path} ${title}`).toBeFalsy();
+      titles.add(title);
+    }
+    const home = await request.get("/en");
+    expect(home.headers()["x-nonce"]).toBeUndefined();
+  });
+
+  test("public pages do not raise CSP violations", async ({ page }, testInfo) => {
+    if (testInfo.project.name === "mobile") test.skip();
+    const seen: string[] = [];
+    await page.addInitScript(() => {
+      window.addEventListener("securitypolicyviolation", (event) => {
+        const bag = (window as unknown as { __csp?: string[] }).__csp ?? [];
+        bag.push(`${event.effectiveDirective} ${event.blockedURI}`);
+        (window as unknown as { __csp?: string[] }).__csp = bag;
+      });
+    });
+    for (const path of ["/en", "/fr", "/en/connect", "/fr/connect", "/en/now", "/fr/places", "/en/ask"]) {
+      await page.goto(path, { waitUntil: "networkidle" });
+      const pageViolations = await page.evaluate(() => (window as unknown as { __csp?: string[] }).__csp ?? []);
+      seen.push(...pageViolations.map((item) => `${path}:${item}`));
+    }
+    expect(seen).toEqual([]);
   });
 });

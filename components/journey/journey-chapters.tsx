@@ -11,7 +11,7 @@ type Chapter = {
   year: string;
   title: string;
   body: string;
-  status: "verified" | "needs";
+  status: "verified" | "needs" | "none";
 };
 
 export function journeyChapters(locale: Locale): Chapter[] {
@@ -36,7 +36,7 @@ export function journeyChapters(locale: Locale): Chapter[] {
         year: "—",
         title: "Bâtisseur",
         body: "Entrepreneur, homme d’affaires, bâtisseur. Les dates de carrière détaillées ne sont pas confirmées.",
-        status: "verified",
+        status: "needs",
       },
       {
         id: "responsibility",
@@ -50,7 +50,7 @@ export function journeyChapters(locale: Locale): Chapter[] {
         year: "Maintenant",
         title: "Le registre continue",
         body: "Le registre public s’écrit par des faits sourcés. Rien d’autre n’est inventé pour remplir la page.",
-        status: "verified",
+        status: "none",
       },
     ];
   }
@@ -64,18 +64,18 @@ export function journeyChapters(locale: Locale): Chapter[] {
       status: "verified",
     },
     {
-        id: "places",
-        year: "—",
-        title: "A life across places",
-        body: `Born in Kinshasa. ${CONFIRMED.livedAcrossEn} — a multicultural, cosmopolitan, Third Culture Kid fact. Other specific places are not confirmed.`,
-        status: "verified",
+      id: "places",
+      year: "—",
+      title: "A life across places",
+      body: `Born in Kinshasa. ${CONFIRMED.livedAcrossEn} as a multicultural, cosmopolitan Third Culture Kid. Other specific places are not confirmed.`,
+      status: "verified",
     },
     {
       id: "builder",
       year: "—",
       title: "Builder",
       body: "Entrepreneur, businessman, builder. Detailed career dates are not confirmed.",
-      status: "verified",
+      status: "needs",
     },
     {
       id: "responsibility",
@@ -89,9 +89,15 @@ export function journeyChapters(locale: Locale): Chapter[] {
       year: "Now",
       title: "The record continues",
       body: "The public record is written from sourced facts. Nothing else is invented to fill the page.",
-      status: "verified",
+      status: "none",
     },
   ];
+}
+
+function badge(status: Chapter["status"], locale: Locale): string | null {
+  if (status === "none") return null;
+  if (status === "verified") return locale === "fr" ? "Vérifié" : "Verified";
+  return locale === "fr" ? "À confirmer" : "Needs confirmation";
 }
 
 export function JourneyChapters({ locale }: { locale: Locale }) {
@@ -120,36 +126,35 @@ export function JourneyChapters({ locale }: { locale: Locale }) {
 
   return (
     <div ref={rootRef} className="space-y-16">
-      {chapters.map((chapter, index) => (
-        <article
-          key={chapter.id}
-          data-chapter
-          className="chapter grid gap-6 border-t border-rule pt-10 md:grid-cols-[8rem_1fr]"
-        >
-          <p className="text-[0.7rem] uppercase tracking-[0.18em] text-muted">
-            {String(index + 1).padStart(2, "0")} · {chapter.year}
-          </p>
-          <div>
-            <h3 className="editorial text-3xl md:text-4xl">{chapter.title}</h3>
-            <p className="mt-4 max-w-2xl text-lg text-ink-soft">
-              <TckText text={chapter.body} />
+      {chapters.map((chapter, index) => {
+        const label = badge(chapter.status, locale);
+        return (
+          <article
+            key={chapter.id}
+            data-chapter={chapter.id}
+            className="chapter grid gap-6 border-t border-rule pt-10 md:grid-cols-[8rem_1fr]"
+          >
+            <p className="text-[0.7rem] uppercase tracking-[0.18em] text-muted">
+              {String(index + 1).padStart(2, "0")} · {chapter.year}
             </p>
-            <p
-              className={`mt-4 status-chip ${
-                chapter.status === "verified" ? "text-verified border-verified" : "text-needs border-needs"
-              }`}
-            >
-              {chapter.status === "verified"
-                ? locale === "fr"
-                  ? "Vérifié"
-                  : "Verified"
-                : locale === "fr"
-                  ? "À confirmer"
-                  : "Needs confirmation"}
-            </p>
-          </div>
-        </article>
-      ))}
+            <div>
+              <h3 className="editorial text-3xl md:text-4xl">{chapter.title}</h3>
+              <p className="mt-4 max-w-2xl text-lg text-ink-soft">
+                <TckText text={chapter.body} />
+              </p>
+              {label ? (
+                <p
+                  className={`mt-4 status-chip ${
+                    chapter.status === "verified" ? "text-verified border-verified" : "text-needs border-needs"
+                  }`}
+                >
+                  {label}
+                </p>
+              ) : null}
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }

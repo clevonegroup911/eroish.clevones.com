@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth-cookie";
 import { verifyAdminToken } from "@/lib/auth-verify";
 import { buildCsp } from "@/lib/csp";
+import { adminLoginPath } from "@/lib/admin-login-path";
 import { defaultLocale, isLocale, negotiateLocale } from "@/lib/i18n";
 
 const PUBLIC_FILE = /\.(.*)$/;
@@ -22,8 +23,8 @@ function localeFromPath(pathname: string): string {
 
 function applySecurity(request: NextRequest, response: NextResponse, nonce: string, csp: string) {
   response.headers.set("Content-Security-Policy", csp);
-  response.headers.set("x-nonce", nonce);
   response.headers.set("x-locale", localeFromPath(request.nextUrl.pathname));
+  response.headers.delete("x-nonce");
   return response;
 }
 
@@ -75,8 +76,7 @@ export async function middleware(request: NextRequest) {
     const token = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
     const session = token ? await verifyAdminToken(token) : null;
     if (!session) {
-      const next = encodeURIComponent(pathname);
-      return rewriteToRelativeRedirect(request, `/admin/login?next=${next}`, nonce, csp);
+      return rewriteToRelativeRedirect(request, adminLoginPath(pathname), nonce, csp);
     }
     return pass();
   }

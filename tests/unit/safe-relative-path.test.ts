@@ -8,10 +8,16 @@ describe("safeRelativePath", () => {
     expect(safeRelativePath("/fr/now")).toBe("/fr/now");
   });
 
-  it("rejects open redirects", () => {
+  it("rejects open redirects and prefixed paths", () => {
     expect(safeRelativePath("//evil.example")).toBe("/");
     expect(safeRelativePath("https://evil.example")).toBe("/");
     expect(safeRelativePath("\\evil")).toBe("/");
     expect(safeRelativePath("")).toBe("/");
+    expect(safeRelativePath(" /evil.example")).toBe("/");
+    expect(safeRelativePath("\t/evil.example")).toBe("/");
+    expect(safeRelativePath("%09/evil.example")).toBe("/");
+    expect(safeRelativePath("/\tevil.example")).toBe("/");
+    expect(safeRelativePath("/evil example")).toBe("/");
+    expect(safeRelativePath("/ok\\no")).toBe("/");
   });
 });

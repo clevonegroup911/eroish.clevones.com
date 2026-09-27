@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { AdminLoginForm } from "@/components/admin/login-form";
+
+export const metadata: Metadata = {
+  title: { absolute: "Admin sign in" },
+  description: "Sign in to the EJC command center.",
+};
 
 export default function AdminLoginPage() {
   return (

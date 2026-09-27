@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { CONNECT_INTENTS } from "@/lib/connect";
+import { CONNECT_INTENTS } from "@/lib/connect-intents";
 import type { Dictionary, Locale } from "@/lib/i18n";
 
 export function ConnectForm({ dict }: { locale: Locale; dict: Dictionary }) {

@@ -75,5 +75,10 @@ describe("public copy", () => {
     expect(getDictionary("fr").home.multicultural).toMatch(/multiculturel/);
     expect(getDictionary("fr").home.multicultural).not.toMatch(/fait multicultural/);
     expect(getDictionary("en").places.lead).not.toMatch(/Lubumbashi|Paris|London|Brussels/i);
+    expect(getDictionary("en").home.multicultural).not.toMatch(/Kid fact|fact\./);
+    expect(getDictionary("fr").home.portraitCaption).toMatch(/emplacement réservé honnête/);
+    expect(getDictionary("fr").nav.challenge).toBe("Défier EJC");
+    expect(getDictionary("fr").nowKinds.FOCUS).toBe("Priorité");
+    expect(JSON.stringify(getDictionary("fr"))).not.toMatch(/placeholder honnête|Me challenger|Focalisation/i);
   });
 });

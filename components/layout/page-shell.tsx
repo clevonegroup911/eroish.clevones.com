@@ -1,3 +1,4 @@
+import { TckText } from "@/components/identity/tck-text";
 import type { Dictionary, Locale } from "@/lib/i18n";
 
 import { SiteFooter } from "./site-footer";
@@ -39,7 +40,9 @@ export function PageIntro({
         <p className="text-[0.7rem] uppercase tracking-[0.18em] text-muted">{kicker}</p>
       ) : null}
       <h1 className="editorial mt-3 text-4xl md:text-6xl">{title}</h1>
-      <p className="mt-5 max-w-2xl text-lg text-ink-soft">{lead}</p>
+      <p className="mt-5 max-w-2xl text-lg text-ink-soft">
+        <TckText text={lead} />
+      </p>
     </header>
   );
 }
