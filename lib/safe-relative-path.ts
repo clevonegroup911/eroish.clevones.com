@@ -17,6 +17,9 @@ export const OPEN_REDIRECT_PROBES = [
   "%7f/evil.example",
 ] as const;
 
+/** Extra encoded-path probes from round 6. */
+export const EXTRA_REDIRECT_PROBES = ["/%09/", "/%2F%2F", "/%5C", "/%252F", "%252F"] as const;
+
 function hasUnsafeChars(value: string): boolean {
   return /[\s\x00-\x1f\x7f\\]/.test(value);
 }
@@ -37,21 +40,20 @@ function fullyDecode(value: string): string | null {
   return hasUnsafeChars(current) ? null : current;
 }
 
+function isSafeForm(value: string): boolean {
+  if (!ALLOWED.test(value)) return false;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(value)) return false;
+  if (value.startsWith("//") || value.startsWith("/\\")) return false;
+  return true;
+}
+
 export function safeRelativePath(raw: string | null | undefined): string {
   const value = raw ?? "";
   if (!value || value.length > MAX_RELATIVE_PATH_LENGTH) return "/";
-  if (!ALLOWED.test(value)) return "/";
-  if (/^[a-z][a-z0-9+.-]*:/i.test(value)) return "/";
+  if (!isSafeForm(value)) return "/";
   const decoded = fullyDecode(value);
-  if (decoded == null || !ALLOWED.test(decoded)) return "/";
-  if (/^[a-z][a-z0-9+.-]*:/i.test(decoded)) return "/";
-  try {
-    const url = new URL(value, "https://ejc.invalid");
-    if (url.origin !== "https://ejc.invalid") return "/";
-    const rebuilt = `${url.pathname}${url.search}`;
-    if (!ALLOWED.test(rebuilt) || fullyDecode(rebuilt) == null) return "/";
-    return rebuilt;
-  } catch {
-    return "/";
-  }
+  if (decoded == null || !isSafeForm(decoded)) return "/";
+  const withoutHash = value.split("#")[0] ?? value;
+  if (!isSafeForm(withoutHash)) return "/";
+  return withoutHash;
 }

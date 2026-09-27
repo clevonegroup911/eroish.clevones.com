@@ -2,20 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import type { Dictionary, Locale } from "@/lib/i18n";
 
 /**
  * Mobile navigation. Opened by the toggle, closed by:
- * - the toggle (click, not a pointerdown-outside)
+ * - the toggle (click stays on the button; backdrop is behind the header)
  * - Escape (focus returns to the toggle)
  * - a nav link (then Next navigates)
- * - pointerdown outside the panel and the toggle — close only: the event is
- *   swallowed so the underlying page is not activated.
+ * - the full-viewport backdrop (close only): it sits behind the header/panel
+ *   and swallows the tap so page links underneath are not activated.
  * Hidden from `lg` via the wrapper class; the command palette stays available.
  */
 export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const prefix = `/${locale}`;
@@ -30,6 +32,10 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
     [dict.nav.places, `${prefix}/places`],
     [dict.nav.ledger, `${prefix}/ledger`],
   ] as const;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -64,32 +70,21 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
       }
     }
 
-    function onPointerDown(event: PointerEvent) {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (buttonRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
-      // Close only: swallow the event so the tap does not activate the page.
-      event.preventDefault();
-      event.stopPropagation();
-      setOpen(false);
-      buttonRef.current?.focus();
-    }
-
     document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointerDown, true);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointerDown, true);
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
+  function closeOnly() {
+    setOpen(false);
+    buttonRef.current?.focus();
+  }
 
   return (
     <div className="lg:hidden">
       <button
         ref={buttonRef}
         type="button"
-        className="text-[0.72rem] uppercase tracking-[0.14em]"
+        className="relative z-50 text-[0.72rem] uppercase tracking-[0.14em]"
         aria-expanded={open}
         aria-controls="mobile-nav"
         aria-label={dict.nav.menu}
@@ -97,6 +92,21 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
       >
         {open ? dict.nav.close : dict.nav.menu}
       </button>
+      {open && mounted
+        ? createPortal(
+            <div
+              id="mobile-nav-backdrop"
+              aria-hidden="true"
+              className="fixed inset-0 z-30 lg:hidden"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                closeOnly();
+              }}
+            />,
+            document.body,
+          )
+        : null}
       {open ? (
         <div
           ref={panelRef}

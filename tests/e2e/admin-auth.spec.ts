@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
-import { OPEN_REDIRECT_PROBES } from "../../lib/safe-relative-path";
+import { EXTRA_REDIRECT_PROBES, OPEN_REDIRECT_PROBES } from "../../lib/safe-relative-path";
 
 const ADMIN_PATHS = [
   "/admin",
@@ -100,7 +100,10 @@ test("login next= keeps the query string and rejects open redirects", async ({ r
   expect(intercepted.status()).toBeLessThan(400);
   expect(intercepted.headers().location).toBe("/admin/login?next=%2Fadmin%2Fledger%3Fx%3D1%26y%3D2");
 
-  for (const probe of OPEN_REDIRECT_PROBES) {
+  const encodedQuery = await request.get("/admin/proofs?tab=a%26b&c=1", { maxRedirects: 0 });
+  expect(encodedQuery.headers().location).toBe("/admin/login?next=%2Fadmin%2Fproofs%3Ftab%3Da%2526b%26c%3D1");
+
+  for (const probe of [...OPEN_REDIRECT_PROBES, ...EXTRA_REDIRECT_PROBES]) {
     const encoded = new URLSearchParams({ to: probe }).toString();
     const response = await request.get(`/api/redirect?${encoded}`, { maxRedirects: 0 });
     expect(response.status(), probe).toBe(307);
@@ -113,6 +116,18 @@ test("login next= keeps the query string and rejects open redirects", async ({ r
   await page.getByLabel("Password").fill("change-this-admin-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/admin\/ledger\?x=1&y=2/);
+
+  await page.context().clearCookies();
+  await page.goto("/admin/proofs?tab=a%26b&c=1");
+  await expect(page).toHaveURL(/\/admin\/login\?next=/);
+  await page.getByLabel("Email").fill("admin@localhost");
+  await page.getByLabel("Password").fill("change-this-admin-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/admin\/proofs/);
+  const landed = new URL(page.url());
+  expect(landed.searchParams.get("tab")).toBe("a&b");
+  expect(landed.searchParams.get("c")).toBe("1");
+  expect(landed.searchParams.has("b")).toBeFalsy();
 });
 
 test("security headers include COOP on pages, redirects, API, health, and icon", async ({ request }, testInfo) => {

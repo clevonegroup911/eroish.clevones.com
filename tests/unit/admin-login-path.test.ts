@@ -17,6 +17,10 @@ describe("adminLoginPath", () => {
     expect(adminLoginPath("/admin/ledger?x=1&y=2")).toBe(
       "/admin/login?next=%2Fadmin%2Fledger%3Fx%3D1%26y%3D2",
     );
+    expect(safeAdminNext("/admin/proofs?tab=a%26b&c=1")).toBe("/admin/proofs?tab=a%26b&c=1");
+    expect(adminLoginPath("/admin/proofs?tab=a%26b&c=1")).toBe(
+      "/admin/login?next=%2Fadmin%2Fproofs%3Ftab%3Da%2526b%26c%3D1",
+    );
   });
 
   it("rejects next values outside /admin", () => {
@@ -31,6 +35,12 @@ describe("adminLoginPath", () => {
     );
     expect(reencodeAdminLoginRedirect("/admin/login?next=%2Fadmin%2Fledger%3Fx%3D1%26y%3D2")).toBe(
       "/admin/login?next=%2Fadmin%2Fledger%3Fx%3D1%26y%3D2",
+    );
+    expect(reencodeAdminLoginRedirect("/admin/login?next=/admin/proofs?tab=a%26b&c=1")).toBe(
+      "/admin/login?next=%2Fadmin%2Fproofs%3Ftab%3Da%2526b%26c%3D1",
+    );
+    expect(reencodeAdminLoginRedirect("/admin/login?next=%2Fadmin%2Fproofs%3Ftab%3Da%2526b%26c%3D1")).toBe(
+      "/admin/login?next=%2Fadmin%2Fproofs%3Ftab%3Da%2526b%26c%3D1",
     );
   });
 
