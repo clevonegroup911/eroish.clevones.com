@@ -1,7 +1,9 @@
 import { PublishButton } from "@/components/admin/publish-button";
+import { requireAdmin } from "@/lib/admin/session";
 import { prisma } from "@/lib/db";
 
 export default async function AdminRecordPage() {
+  await requireAdmin();
   const items = await prisma.recordEvent.findMany({ include: { sources: true }, orderBy: { year: "asc" } });
   return (
     <>

@@ -40,7 +40,7 @@ npm run build
 npm run test:e2e
 ```
 
-End-to-end tests start their own server on `http://127.0.0.1:3100` (override with `E2E_ORIGIN`). They use a production `next start` only when `.next/BUILD_ID` exists; otherwise they use `next dev`. Screenshots write to `E2E_ARTIFACTS_DIR` or gitignored `tests/e2e/output`. They do not reuse an already-running app unless `E2E_REUSE_SERVER=1`.
+End-to-end tests start their own server on `http://127.0.0.1:3100` (override with `E2E_ORIGIN`). They use a production `next start` only when `.next/BUILD_ID` exists; otherwise they use `next dev` and warm compiled routes first. Screenshots write to `E2E_ARTIFACTS_DIR` or gitignored `tests/e2e/output`. They do not reuse an already-running app unless `E2E_REUSE_SERVER=1`.
 
 ## Docs
 

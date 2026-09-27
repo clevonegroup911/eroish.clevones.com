@@ -46,18 +46,13 @@ const en = {
     LESSON: "Lesson",
     PUBLIC_EVENT: "Public event",
   },
-  cycles: {
-    platform: "Build → Act → Prove → Learn → Grow",
-    signal:
-      "Signal → Understanding → Decision → Action → Execution → Evidence → Result → Learning",
-  },
   sources: {
     mandate: "Confirmed public facts for this official identity platform",
   },
   counts: {
     proofs: { one: "published proof", other: "published proofs" },
     places: { one: "confirmed place", other: "confirmed places" },
-    ventures: { one: "venture exposure", other: "venture exposures" },
+    ventures: { one: "entrepreneurial exposure", other: "entrepreneurial exposures" },
     pendingPlaces: { one: "place awaiting confirmation", other: "places awaiting confirmation" },
   },
   proofNodes: {
@@ -110,7 +105,7 @@ const en = {
     associatedWith: "Associated with",
     nationality: "Congolese",
     multicultural:
-      "Grew up and lived across different countries, cities and provinces — a multicultural, cosmopolitan, Third Culture Kid fact. Other specific places are not confirmed.",
+      "Grew up and lived across different countries, cities and provinces — a multicultural, cosmopolitan Third Culture Kid fact. Other specific places are not confirmed.",
   },
   now: {
     title: "Now",
@@ -159,7 +154,6 @@ const en = {
   },
   ledger: {
     title: "Reputation Ledger",
-    motto: "My word has a history.",
     lead: "Commitments keep their previous state when they change. Failure is not deleted.",
     empty: "No published commitments yet.",
   },
@@ -238,14 +232,14 @@ const en = {
   },
   places: {
     title: "Places",
-    lead: "Born in Kinshasa. Grew up and lived across different countries, cities and provinces — a multicultural, cosmopolitan, Third Culture Kid fact. Other specific places are not named.",
+    lead: "Born in Kinshasa. Grew up and lived across different countries, cities and provinces — a multicultural, cosmopolitan Third Culture Kid fact. Other specific places are not named.",
     confirmed: "Confirmed",
     needs: "Needs confirmation",
     mapCaption: "Schematic, not to scale. Only confirmed places are shown.",
     schematicNote:
       "Kinshasa is shown in western DRC. Other countries, cities and provinces from that record are not named on this schematic.",
     schematicTitle: "Schematic — western DRC",
-    eastNote: "east (not plotted)",
+    otherLegend: "Other places: to be confirmed, not placed",
     westLabel: "western DRC",
     mobileItem: "western DRC (schematic, not to scale)",
   },
@@ -324,18 +318,13 @@ const fr: Dictionary = {
     LESSON: "Leçon",
     PUBLIC_EVENT: "Événement public",
   },
-  cycles: {
-    platform: "Construire → Agir → Prouver → Apprendre → Grandir",
-    signal:
-      "Signal → Compréhension → Décision → Action → Exécution → Preuve → Résultat → Apprentissage",
-  },
   sources: {
     mandate: "Faits publics confirmés pour cette plateforme d’identité officielle",
   },
   counts: {
     proofs: { one: "preuve publiée", other: "preuves publiées" },
     places: { one: "lieu confirmé", other: "lieux confirmés" },
-    ventures: { one: "exposition de venture", other: "expositions de venture" },
+    ventures: { one: "exposition entrepreneuriale", other: "expositions entrepreneuriales" },
     pendingPlaces: { one: "lieu à confirmer", other: "lieux à confirmer" },
   },
   proofNodes: {
@@ -388,7 +377,7 @@ const fr: Dictionary = {
     associatedWith: "Associé à",
     nationality: "Congolais",
     multicultural:
-      "A grandi et vécu dans différents pays, villes et provinces — un fait multicultural, cosmopolite, Third Culture Kid. Les autres lieux précis ne sont pas confirmés.",
+      "A grandi et vécu dans différents pays, villes et provinces — un fait multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas confirmés.",
   },
   now: {
     title: "Maintenant",
@@ -437,7 +426,6 @@ const fr: Dictionary = {
   },
   ledger: {
     title: "Registre d’engagements",
-    motto: "Ma parole a une histoire.",
     lead: "Un engagement conserve son état précédent lorsqu’il change. L’échec n’est pas effacé.",
     empty: "Aucun engagement publié.",
   },
@@ -516,21 +504,21 @@ const fr: Dictionary = {
   },
   places: {
     title: "Lieux",
-    lead: "Né à Kinshasa. A grandi et vécu dans différents pays, villes et provinces — un fait multicultural, cosmopolite, Third Culture Kid. Les autres lieux précis ne sont pas nommés.",
+    lead: "Né à Kinshasa. A grandi et vécu dans différents pays, villes et provinces — un fait multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas nommés.",
     confirmed: "Confirmé",
     needs: "À confirmer",
     mapCaption: "Schéma, pas à l’échelle. Seuls les lieux confirmés sont indiqués.",
     schematicNote:
       "Kinshasa est indiqué à l’ouest de la RDC. Les autres pays, villes et provinces de ce registre ne sont pas nommés sur ce schéma.",
     schematicTitle: "Schéma — ouest de la RDC",
-    eastNote: "est (non placé)",
+    otherLegend: "Autres lieux : à confirmer, non placés",
     westLabel: "ouest de la RDC",
     mobileItem: "ouest de la RDC (schéma, pas à l’échelle)",
   },
   identity: {
     title: "Qui je suis",
     lead: "Nom, origine, rôle — rien d’inventé au-delà.",
-    venturesTitle: "Ventures — exposition",
+    venturesTitle: "Parcours entrepreneurial — exposition",
     venturesLead: "Pas un catalogue de produits. Un parcours entrepreneurial.",
   },
   principles: {

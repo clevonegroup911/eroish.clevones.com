@@ -7,6 +7,7 @@ const origin = e2eOrigin();
 export default defineConfig({
   testDir: "./tests/e2e",
   testMatch: "**/*.spec.ts",
+  globalSetup: "./tests/e2e/global-setup.ts",
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,

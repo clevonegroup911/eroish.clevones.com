@@ -12,6 +12,7 @@ export function isMetadataPath(pathname: string): boolean {
   const clean = pathname.split("?")[0] ?? pathname;
   const stripped = clean.replace(/^\/(en|fr)(?=\/|$)/, "") || "/";
   return (
+    stripped === "/favicon.ico" ||
     stripped === "/icon" ||
     stripped === "/apple-icon" ||
     stripped === "/apple-icon.png" ||

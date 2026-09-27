@@ -6,10 +6,6 @@ import { getDictionary, isLocale, type Locale } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
-export async function generateStaticParams() {
-  return [{ locale: "en" }, { locale: "fr" }];
-}
-
 export async function generateMetadata({
   params,
 }: {
@@ -19,7 +15,10 @@ export async function generateMetadata({
   if (!isLocale(raw)) return {};
   const dict = getDictionary(raw);
   return {
-    title: { absolute: dict.meta.title },
+    title: {
+      default: dict.meta.title,
+      template: `%s · ${dict.brand.signature}`,
+    },
     description: dict.meta.description,
     alternates: {
       languages: {

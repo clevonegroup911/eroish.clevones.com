@@ -1,6 +1,8 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { prisma } from "@/lib/db";
 
 export default async function AdminSecurityPage() {
+  await requireAdmin();
   const logs = await prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 50 });
   const revisions = await prisma.contentRevision.findMany({ orderBy: { createdAt: "desc" }, take: 20 });
   return (

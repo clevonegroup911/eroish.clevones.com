@@ -1,7 +1,9 @@
 import { PublishButton } from "@/components/admin/publish-button";
+import { requireAdmin } from "@/lib/admin/session";
 import { prisma } from "@/lib/db";
 
 export default async function AdminThinkingPage() {
+  await requireAdmin();
   const items = await prisma.thinkingPiece.findMany({ include: { sources: true } });
   return (
     <>

@@ -1,6 +1,11 @@
 import { JourneyChapters } from "@/components/journey/journey-chapters";
 import { PageIntro } from "@/components/layout/page-shell";
-import { localeContext } from "@/lib/locale-page";
+import { localeContext, sectionMetadata } from "@/lib/locale-page";
+
+
+export function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  return sectionMetadata(params, (dict) => ({ title: dict.journey.title, description: dict.journey.lead }));
+}
 
 export default async function JourneyPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale, dict } = await localeContext(params);

@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PortraitPlaceholder } from "@/components/identity/portrait-placeholder";
+import { TckText } from "@/components/identity/tck-text";
 import { JourneyChapters } from "@/components/journey/journey-chapters";
 import { StatusChip } from "@/components/ui/status-chip";
 import { CONFIRMED } from "@/lib/identity";
@@ -8,6 +10,20 @@ import { getDictionary, isLocale, type Locale } from "@/lib/i18n";
 import { plural } from "@/lib/plural";
 import { getIdentity, getPublishedPlaces, getPublishedProofs, getPublishedVentures } from "@/lib/queries";
 import { prisma } from "@/lib/db";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale: raw } = await params;
+  if (!isLocale(raw)) return {};
+  const dict = getDictionary(raw);
+  return {
+    title: { absolute: dict.meta.title },
+    description: dict.meta.description,
+  };
+}
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: raw } = await params;
@@ -92,13 +108,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <li>
               {dict.home.associatedWith} {CONFIRMED.organization}
             </li>
-            <li>{dict.home.multicultural}</li>
+            <li>
+              <TckText text={dict.home.multicultural} />
+            </li>
           </ul>
         </div>
         <div>
           <h2 className="editorial text-3xl">{dict.home.unconfirmedTitle}</h2>
           <p className="mt-6 text-lg text-ink-soft">{dict.home.unconfirmedBody}</p>
-          <p className="mt-4 text-sm text-muted">{dict.cycles.platform}</p>
         </div>
       </section>
 

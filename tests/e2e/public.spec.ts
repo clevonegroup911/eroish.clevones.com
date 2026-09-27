@@ -52,7 +52,7 @@ test.describe("public identity", () => {
     await page.goto("/en/proof");
     await expect(page.getByRole("heading", { name: "Proof Graph" })).toBeVisible();
     await expect(page.getByText("Verified").first()).toBeVisible();
-    await expect(page.locator("ol li").filter({ hasText: "Origin" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Born in Kinshasa/ }).first()).toBeVisible();
     await shot(page, `record_proof${suffix}`);
 
     await page.goto("/en/ask");
@@ -122,5 +122,11 @@ test.describe("public identity", () => {
     expect(atom.ok()).toBeTruthy();
     const icon = await request.get("/icon");
     expect(icon.status()).toBeLessThan(400);
+    const favicon = await request.get("/favicon.ico");
+    expect(favicon.status()).toBeLessThan(400);
+    const nowTitle = await request.get("/en/now");
+    expect(await nowTitle.text()).toMatch(/<title>[^<]*Now/i);
+    const frNow = await request.get("/fr/now");
+    expect(await frNow.text()).toMatch(/<title>[^<]*Maintenant/i);
   });
 });

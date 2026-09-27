@@ -1,7 +1,9 @@
 import { moderateChallenge } from "@/app/admin/actions";
+import { requireAdmin } from "@/lib/admin/session";
 import { prisma } from "@/lib/db";
 
 export default async function AdminChallengesPage() {
+  await requireAdmin();
   const theses = await prisma.thesis.findMany({ include: { challenges: true } });
   return (
     <>

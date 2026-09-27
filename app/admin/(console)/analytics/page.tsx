@@ -1,6 +1,8 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { prisma } from "@/lib/db";
 
 export default async function AdminAnalyticsPage() {
+  await requireAdmin();
   const grouped = await prisma.analyticsEvent.groupBy({
     by: ["name"],
     _count: { name: true },

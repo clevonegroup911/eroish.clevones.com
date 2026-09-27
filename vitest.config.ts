@@ -5,6 +5,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/unit/**/*.test.ts"],
+    env: {
+      AUTH_SECRET: "dev-only-auth-secret-change-before-production-use-32b",
+    },
   },
   resolve: {
     alias: {

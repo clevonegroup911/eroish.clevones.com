@@ -35,8 +35,8 @@ export function PlacesMap({
             fill="#ddd7cb"
             stroke="#c8c2b4"
           />
-          <text x="430" y="200" fontSize="13" fill="#5f5c54">
-            {dict.places.eastNote}
+          <text x="24" y="340" fontSize="13" fill="#5f5c54">
+            {dict.places.otherLegend}
           </text>
           {confirmed.map((place) => (
             <g key={place.id}>

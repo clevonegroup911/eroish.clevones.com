@@ -13,6 +13,7 @@ async function loadCandidate(
   entity: string,
   id: string,
 ): Promise<PublishCandidate | null> {
+  await requireAdmin();
   const include = { sources: true } as const;
   if (entity === "NowItem") {
     return prisma.nowItem.findUnique({ where: { id }, include });

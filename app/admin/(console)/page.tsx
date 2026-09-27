@@ -1,8 +1,10 @@
 import Link from "next/link";
 
+import { requireAdmin } from "@/lib/admin/session";
 import { prisma } from "@/lib/db";
 
 export default async function AdminHomePage() {
+  await requireAdmin();
   const [
     nowCount,
     recordCount,

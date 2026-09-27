@@ -1,7 +1,9 @@
 import { decideLearningProposal } from "@/app/admin/actions";
+import { requireAdmin } from "@/lib/admin/session";
 import { prisma } from "@/lib/db";
 
 export default async function AdminLearningPage() {
+  await requireAdmin();
   const items = await prisma.learningProposal.findMany({ orderBy: { createdAt: "desc" } });
   return (
     <>

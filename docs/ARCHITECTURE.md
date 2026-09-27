@@ -22,7 +22,7 @@ Conventions (Next.js App Router, Prisma, Nginx/PM2 on the existing VM, security 
 | `/now` | Current focus/objective/challenge/decision/action/result/lesson/signal |
 | `/record` | Evidence-based chronological record + filters |
 | `/proof` | Proof Graph + verification statuses |
-| `/ledger` | Reputation ledger (“my word has a history”) |
+| `/ledger` | Reputation ledger of commitments |
 | `/thinking` | Essays/notes with permanent URLs |
 | `/challenge` | Moderated thesis challenges + version history |
 | `/ask` | Sourced retrieval only; refusal when no source |
@@ -30,7 +30,7 @@ Conventions (Next.js App Router, Prisma, Nginx/PM2 on the existing VM, security 
 | `/signal` | Timestamped short posts |
 | `/journey` | Scroll-driven chapters |
 | `/places` | Confirmed Kinshasa + structured unconfirmed slots |
-| `/principles` | Platform cycle; personal principles stay empty until written |
+| `/principles` | Personal principles stay empty until written |
 | `/media` | Sourced appearances only |
 | `/privacy` | What this site never publishes |
 
@@ -64,7 +64,7 @@ Learning Engine writes **proposals** from meaningful events (refusals, claim ins
 
 ## Security
 
-`next.config.ts` sets CSP, `X-Frame-Options: DENY`, nosniff, Referrer-Policy, Permissions-Policy, HSTS. Admin routes are gated in `middleware.ts`. `APP_ORIGIN` is never derived from `Host` / `X-Forwarded-*`.
+`middleware.ts` sets a per-request CSP with a script nonce (`strict-dynamic`; `unsafe-eval` only in development). `style-src` still allows `'unsafe-inline'` because Next/Tailwind emit inline styles. Other headers (`X-Frame-Options: DENY`, nosniff, Referrer-Policy, Permissions-Policy, HSTS) are set in `next.config.ts`. Admin routes verify the HMAC JWT in middleware and again in every console page, action, and data load. `APP_ORIGIN` is never derived from `Host` / `X-Forwarded-*`. Redirects use relative `Location` paths.
 
 ## Identity graph
 

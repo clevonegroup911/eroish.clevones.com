@@ -2,8 +2,13 @@ import Link from "next/link";
 
 import { PageIntro } from "@/components/layout/page-shell";
 import { StatusChip } from "@/components/ui/status-chip";
-import { localeContext } from "@/lib/locale-page";
+import { localeContext, sectionMetadata } from "@/lib/locale-page";
 import { prisma } from "@/lib/db";
+
+
+export function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  return sectionMetadata(params, (dict) => ({ title: dict.thinking.title, description: dict.thinking.lead }));
+}
 
 export default async function ThinkingPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale, dict } = await localeContext(params);

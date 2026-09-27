@@ -1,9 +1,15 @@
 import { PortraitPlaceholder } from "@/components/identity/portrait-placeholder";
+import { TckText } from "@/components/identity/tck-text";
 import { PageIntro } from "@/components/layout/page-shell";
 import { StatusChip } from "@/components/ui/status-chip";
 import { CONFIRMED } from "@/lib/identity";
-import { localeContext } from "@/lib/locale-page";
+import { localeContext, sectionMetadata } from "@/lib/locale-page";
 import { getIdentity, getPublishedVentures } from "@/lib/queries";
+
+
+export function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  return sectionMetadata(params, (dict) => ({ title: dict.identity.title, description: dict.identity.lead }));
+}
 
 export default async function IdentityPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale, dict } = await localeContext(params);
@@ -20,7 +26,9 @@ export default async function IdentityPage({ params }: { params: Promise<{ local
           <p className="mt-6 space-y-2 text-lg">
             <span className="block">{identity?.summary}</span>
           </p>
-          <p className="mt-6 text-ink-soft">{identity?.multiculturalNote}</p>
+          <p className="mt-6 text-ink-soft">
+            <TckText text={identity?.multiculturalNote ?? dict.home.multicultural} />
+          </p>
         </div>
         <PortraitPlaceholder
           caption={identity?.portraitCaption ?? dict.home.portraitCaption}

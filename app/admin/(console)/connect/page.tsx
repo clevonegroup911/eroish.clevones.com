@@ -1,6 +1,8 @@
+import { requireAdmin } from "@/lib/admin/session";
 import { prisma } from "@/lib/db";
 
 export default async function AdminConnectPage() {
+  await requireAdmin();
   const items = await prisma.connectRequest.findMany({ orderBy: { createdAt: "desc" } });
   return (
     <>

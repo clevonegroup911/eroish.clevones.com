@@ -3,8 +3,12 @@ import { notFound } from "next/navigation";
 import { ChallengeForm } from "@/components/challenge/challenge-form";
 import { PageIntro } from "@/components/layout/page-shell";
 import { StatusChip } from "@/components/ui/status-chip";
-import { localeContext } from "@/lib/locale-page";
+import { localeContext, sectionMetadata } from "@/lib/locale-page";
 import { prisma } from "@/lib/db";
+
+export function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  return sectionMetadata(params, (dict) => ({ title: dict.challenge.title, description: dict.challenge.lead }));
+}
 
 export default async function ThesisPage({
   params,

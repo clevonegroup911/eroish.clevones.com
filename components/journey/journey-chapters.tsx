@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
+import { TckText } from "@/components/identity/tck-text";
 import { CONFIRMED } from "@/lib/identity";
 import type { Locale } from "@/lib/i18n";
 
@@ -27,7 +28,7 @@ export function journeyChapters(locale: Locale): Chapter[] {
         id: "places",
         year: "—",
         title: "Une vie entre les lieux",
-        body: `Né à Kinshasa. ${CONFIRMED.livedAcrossFr} — un fait multicultural, cosmopolite, Third Culture Kid. Les autres lieux précis ne sont pas confirmés.`,
+        body: `Né à Kinshasa. ${CONFIRMED.livedAcrossFr} — un fait multiculturel et cosmopolite, Third Culture Kid (enfance entre plusieurs cultures). Les autres lieux précis ne sont pas confirmés.`,
         status: "verified",
       },
       {
@@ -130,7 +131,9 @@ export function JourneyChapters({ locale }: { locale: Locale }) {
           </p>
           <div>
             <h3 className="editorial text-3xl md:text-4xl">{chapter.title}</h3>
-            <p className="mt-4 max-w-2xl text-lg text-ink-soft">{chapter.body}</p>
+            <p className="mt-4 max-w-2xl text-lg text-ink-soft">
+              <TckText text={chapter.body} />
+            </p>
             <p
               className={`mt-4 status-chip ${
                 chapter.status === "verified" ? "text-verified border-verified" : "text-needs border-needs"

@@ -1,7 +1,9 @@
 import { updateIdentityTagline } from "@/app/admin/actions";
+import { requireAdmin } from "@/lib/admin/session";
 import { prisma } from "@/lib/db";
 
 export default async function AdminIdentityPage() {
+  await requireAdmin();
   const profiles = await prisma.identityProfile.findMany();
   return (
     <>

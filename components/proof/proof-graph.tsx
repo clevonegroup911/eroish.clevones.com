@@ -50,7 +50,7 @@ export function ProofGraph({
             );
           })}
         </svg>
-        <ol className="grid gap-3 p-4">
+        <ol className="grid gap-3 p-4 md:hidden">
           {items.map((item) => (
             <li key={item.id} className="flex items-center gap-3 text-base">
               <span
