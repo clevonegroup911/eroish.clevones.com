@@ -189,7 +189,7 @@ Cutover does not widen the corpus. Example thinking/thesis/now rows stay `approv
 Do not rewrite existing assertions to hide gaps. CMS-12 is done when:
 
 - `npm run lint`, `typecheck`, `test`, `build`, `test:e2e` pass on Postgres
-- `tests/e2e/public.spec.ts` still sees Kinshasa, TCK sentence, no `BUILD. LEAD. EXECUTE.`, no net worth, Ask refusal, labelled Now examples, journey badges
+- `tests/e2e/public.spec.ts` still sees Kinshasa, TCK sentence, no removed command-line slogan, no wealth claim, Ask refusal, labelled Now examples, journey badges
 - `tests/unit/journey.test.ts` chapter statuses unchanged
 - `tests/unit/identity.test.ts` / publishing-safety / ask-ejc still pass
 - New consistency + identity-lock tests pass
