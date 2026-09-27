@@ -64,7 +64,7 @@ Learning Engine writes **proposals** from meaningful events (refusals, claim ins
 
 ## Security
 
-`middleware.ts` sets a per-request CSP with a script nonce (`strict-dynamic`; `unsafe-eval` only in development). `style-src` still allows `'unsafe-inline'` because Next/Tailwind emit inline styles. Other headers (`X-Frame-Options: DENY`, nosniff, Referrer-Policy, Permissions-Policy, HSTS) are set in `next.config.ts`. Admin routes verify the HMAC JWT in middleware and again in every console page, action, and data load. `APP_ORIGIN` is never derived from `Host` / `X-Forwarded-*`. Middleware redirects clone `request.nextUrl` so `Location` uses the request host (never a baked-in `localhost`). Route handlers may use a relative `Location`.
+`middleware.ts` sets a per-request CSP with a script nonce (`strict-dynamic`; `unsafe-eval` only in development). `style-src` still allows `'unsafe-inline'` because Next/Tailwind emit inline styles. Other headers (`X-Frame-Options: DENY`, nosniff, Referrer-Policy, Permissions-Policy, HSTS) are set in `next.config.ts`. Admin routes verify the HMAC JWT in middleware and again in every console page, action, and data load. `APP_ORIGIN` is never derived from `Host` / `X-Forwarded-*` for canonical links. Middleware `Location` values use the request `Host` when it is loopback (`127.0.0.1`, `localhost`, `::1`) so local curls keep the address they used; otherwise they use `APP_ORIGIN`. Route handlers may use a relative `Location`. Next.js `request.nextUrl` is not used for the host — it rewrites to `localhost` even when the client called `127.0.0.1`.
 
 ## Identity graph
 

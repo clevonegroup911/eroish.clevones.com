@@ -2,12 +2,13 @@ import { spawn } from "node:child_process";
 import { existsSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
+import { e2eWarmMarkerPath } from "../../lib/e2e-warm-path";
 import { e2eBind, e2eOrigin } from "./origin";
 
 const root = path.resolve(__dirname, "../..");
 const bind = e2eBind();
 const origin = e2eOrigin();
-const warmMarker = path.join(root, ".e2e-warm");
+const warmMarker = e2eWarmMarkerPath();
 
 const WARMUP = [
   "/en",
@@ -20,9 +21,22 @@ const WARMUP = [
   "/en/ask",
   "/en/connect",
   "/en/ledger",
+  "/en/identity",
+  "/en/principles",
+  "/en/privacy",
+  "/en/media",
+  "/en/thinking",
+  "/en/challenge",
+  "/en/signal",
   "/fr/now",
   "/fr/identity",
   "/fr/ledger",
+  "/fr/journey",
+  "/fr/places",
+  "/fr/proof",
+  "/fr/ask",
+  "/fr/connect",
+  "/fr/record",
   "/admin/login",
   "/icon",
   "/favicon.ico",

@@ -10,6 +10,7 @@ import {
 import { verifyAdminToken } from "@/lib/auth-verify";
 import { buildCsp } from "@/lib/csp";
 import { defaultLocale, isLocale, negotiateLocale } from "@/lib/i18n";
+import { buildRedirectLocation } from "@/lib/request-redirect";
 
 const PUBLIC_FILE = /\.(.*)$/;
 
@@ -28,10 +29,14 @@ function applySecurity(request: NextRequest, response: NextResponse, nonce: stri
 }
 
 function redirectUsingRequest(request: NextRequest, pathname: string, search: string, nonce: string, csp: string) {
-  const url = request.nextUrl.clone();
-  url.pathname = pathname;
-  url.search = search;
-  return applySecurity(request, NextResponse.redirect(url), nonce, csp);
+  const location = buildRedirectLocation({
+    pathname,
+    search,
+    host: request.headers.get("host"),
+    protocol: request.nextUrl.protocol,
+    appOrigin: process.env.APP_ORIGIN,
+  });
+  return applySecurity(request, NextResponse.redirect(location), nonce, csp);
 }
 
 export async function middleware(request: NextRequest) {

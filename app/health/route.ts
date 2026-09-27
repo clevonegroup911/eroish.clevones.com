@@ -1,12 +1,12 @@
 import { existsSync } from "node:fs";
-import path from "node:path";
+
+import { e2eWarmMarkerPath } from "@/lib/e2e-warm-path";
 
 export const dynamic = "force-dynamic";
 
 export function GET() {
   if (process.env.E2E_WARMUP === "1") {
-    const marker = path.join(process.cwd(), ".e2e-warm");
-    if (!existsSync(marker)) {
+    if (!existsSync(e2eWarmMarkerPath())) {
       return new Response("warming", { status: 503 });
     }
   }

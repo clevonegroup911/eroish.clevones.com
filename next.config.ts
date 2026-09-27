@@ -4,6 +4,22 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   serverExternalPackages: ["argon2", "@prisma/client"],
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: [
+          "**/.git/**",
+          "**/node_modules/**",
+          "**/.next/**",
+          "**/tests/**",
+          "**/prisma/*.db",
+          "**/prisma/*.db-journal",
+        ],
+      };
+    }
+    return config;
+  },
   async headers() {
     return [
       {
