@@ -26,12 +26,12 @@ export function ProofGraph({
 }) {
   return (
     <div className="px-5 py-12 md:px-8">
-      <div className="mb-12 overflow-x-auto border border-rule bg-paper-2">
+      <div className="mb-12 overflow-x-auto border border-rule bg-paper-2" aria-label={dict.proof.title}>
         <svg
           viewBox="0 0 800 220"
           className="hidden min-w-[720px] md:block"
           role="img"
-          aria-label={dict.proof.title}
+          aria-hidden="true"
         >
           <text x="40" y="36" fill="#5f5c54" fontSize="14">
             EJC
@@ -50,7 +50,7 @@ export function ProofGraph({
             );
           })}
         </svg>
-        <ol className="grid gap-3 p-4 md:hidden">
+        <ol className="grid gap-3 p-4">
           {items.map((item) => (
             <li key={item.id} className="flex items-center gap-3 text-base">
               <span

@@ -20,6 +20,7 @@ const eslintConfig = [
       "tests/e2e/evidence/**",
       "playwright-report/**",
       "blob-report/**",
+      "next-env.d.ts",
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),

@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { exploreItems, type Dictionary, type Locale } from "@/lib/i18n";
 
 export function ExploreLayer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,19 +84,15 @@ export function ExploreLayer({ locale, dict }: { locale: Locale; dict: Dictionar
               ) : (
                 filtered.map((item) => (
                   <li key={item.href}>
-                    <button
-                      type="button"
+                    <a
+                      href={item.href}
                       className="flex w-full items-center justify-between py-2 text-left hover:underline"
-                      onClick={() => {
-                        setOpen(false);
-                        router.push(item.href);
-                      }}
                     >
                       <span>{item.label}</span>
                       <span aria-hidden className="text-muted">
                         →
                       </span>
-                    </button>
+                    </a>
                   </li>
                 ))
               )}

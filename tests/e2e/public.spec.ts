@@ -45,7 +45,7 @@ test.describe("public identity", () => {
     await page.goto("/en/proof");
     await expect(page.getByRole("heading", { name: "Proof Graph" })).toBeVisible();
     await expect(page.getByText("Verified").first()).toBeVisible();
-    await expect(page.getByText("Origin").first()).toBeVisible();
+    await expect(page.locator("ol li").filter({ hasText: "Origin" })).toBeVisible();
     await shot(page, `record_proof${suffix}`);
 
     await page.goto("/en/ask");
@@ -84,7 +84,7 @@ test.describe("public identity", () => {
     );
     await page.getByRole("button", { name: "Explorer EJC" }).click();
     await expect(page.getByRole("dialog", { name: "Explorer EJC" })).toBeVisible();
-    await page.getByRole("button", { name: "Qui je suis" }).click();
+    await page.getByRole("dialog", { name: "Explorer EJC" }).getByRole("link", { name: "Qui je suis" }).click();
     await expect(page).toHaveURL(/\/fr\/identity/);
 
     await page.goto("/fr/now");
