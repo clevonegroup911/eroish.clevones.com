@@ -9,10 +9,12 @@ import type { Dictionary, Locale } from "@/lib/i18n";
 /**
  * Mobile navigation. Opened by the toggle, closed by:
  * - the toggle (click stays on the button; backdrop is behind the header)
- * - Escape (focus returns to the toggle)
+ * - Escape (focus returns to the toggle, preventScroll)
  * - a nav link (then Next navigates)
- * - the full-viewport backdrop (close only): it sits behind the header/panel
- *   and swallows the tap so page links underneath are not activated.
+ * - the full-viewport backdrop (close only): pointerdown preventDefault
+ *   keeps the layer mounted through the compatibility click; the menu
+ *   closes on that click (and a 500ms capture-phase click guard) so a
+ *   touch tap never activates the page underneath.
  * Hidden from `lg` via the wrapper class; the command palette stays available.
  */
 export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }) {
@@ -20,6 +22,8 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
   const [mounted, setMounted] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const guardRef = useRef<{ click?: (event: Event) => void; timer?: number }>({});
+  const finishCloseRef = useRef<() => void>(() => {});
   const prefix = `/${locale}`;
   const links = [
     [dict.nav.who, `${prefix}/identity`],
@@ -37,12 +41,45 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
     setMounted(true);
   }, []);
 
+  function clearGuard() {
+    if (guardRef.current.click) {
+      document.removeEventListener("click", guardRef.current.click, true);
+    }
+    if (guardRef.current.timer !== undefined) {
+      window.clearTimeout(guardRef.current.timer);
+    }
+    guardRef.current = {};
+  }
+
+  function finishClose() {
+    clearGuard();
+    setOpen(false);
+    buttonRef.current?.focus({ preventScroll: true });
+  }
+  finishCloseRef.current = finishClose;
+
+  function armClickGuard() {
+    clearGuard();
+    const onClick = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      finishCloseRef.current();
+    };
+    guardRef.current.click = onClick;
+    document.addEventListener("click", onClick, true);
+    guardRef.current.timer = window.setTimeout(() => finishCloseRef.current(), 500);
+  }
+
+  useEffect(() => {
+    return () => clearGuard();
+  }, []);
+
   useEffect(() => {
     if (!open) return;
 
     const panel = panelRef.current;
     const first = panel?.querySelector<HTMLElement>("a, button");
-    first?.focus();
+    first?.focus({ preventScroll: true });
 
     function focusables() {
       return Array.from(panelRef.current?.querySelectorAll<HTMLElement>("a, button") ?? []);
@@ -51,8 +88,7 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        setOpen(false);
-        buttonRef.current?.focus();
+        finishCloseRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -63,21 +99,16 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
       if (!firstNode || !lastNode) return;
       if (event.shiftKey && document.activeElement === firstNode) {
         event.preventDefault();
-        lastNode.focus();
+        lastNode.focus({ preventScroll: true });
       } else if (!event.shiftKey && document.activeElement === lastNode) {
         event.preventDefault();
-        firstNode.focus();
+        firstNode.focus({ preventScroll: true });
       }
     }
 
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
-
-  function closeOnly() {
-    setOpen(false);
-    buttonRef.current?.focus();
-  }
 
   return (
     <div className="lg:hidden">
@@ -88,7 +119,13 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
         aria-expanded={open}
         aria-controls="mobile-nav"
         aria-label={dict.nav.menu}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          if (open) {
+            finishClose();
+            return;
+          }
+          setOpen(true);
+        }}
       >
         {open ? dict.nav.close : dict.nav.menu}
       </button>
@@ -101,7 +138,12 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
               onPointerDown={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                closeOnly();
+                armClickGuard();
+              }}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                finishClose();
               }}
             />,
             document.body,
@@ -115,7 +157,7 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
         >
           <nav aria-label={dict.nav.menu} className="grid gap-3 text-[0.8rem] uppercase tracking-[0.14em]">
             {links.map(([label, href]) => (
-              <Link key={href} href={href} onClick={() => setOpen(false)}>
+              <Link key={href} href={href} onClick={() => finishClose()}>
                 {label}
               </Link>
             ))}

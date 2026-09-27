@@ -1,6 +1,57 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { shot } from "./artifacts";
+
+async function watchOutsideLinkClicks(page: Page) {
+  await page.addInitScript(() => {
+    (window as unknown as { __outsideClicks?: number }).__outsideClicks = 0;
+    window.addEventListener(
+      "click",
+      (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const link = target.closest("a");
+        if (!link || link.closest("#mobile-nav")) return;
+        const bag = window as unknown as { __outsideClicks?: number };
+        bag.__outsideClicks = (bag.__outsideClicks ?? 0) + 1;
+      },
+      true,
+    );
+  });
+}
+
+async function outsideLinkClicks(page: Page) {
+  return page.evaluate(() => (window as unknown as { __outsideClicks?: number }).__outsideClicks ?? 0);
+}
+
+async function markOutsideLink(locator: Locator) {
+  await locator.evaluate((el) => {
+    el.addEventListener(
+      "click",
+      () => {
+        el.setAttribute("data-outside-clicked", "1");
+      },
+      true,
+    );
+  });
+}
+
+async function pointActivate(page: Page, locator: Locator, mode: "touch" | "mouse") {
+  const box = await locator.boundingBox();
+  expect(box, "target must be visible").toBeTruthy();
+  const x = (box?.x ?? 0) + (box?.width ?? 0) / 2;
+  const y = (box?.y ?? 0) + (box?.height ?? 0) / 2;
+  if (mode === "touch") await page.touchscreen.tap(x, y);
+  else await page.mouse.click(x, y);
+}
+
+async function assertHomeHeld(page: Page, locale: "fr" | "en", link: Locator) {
+  const re = locale === "fr" ? /\/fr\/?$/ : /\/en\/?$/;
+  await page.waitForTimeout(1200);
+  await expect.poll(() => page.url(), { timeout: 1500 }).toMatch(re);
+  expect(await outsideLinkClicks(page)).toBe(0);
+  expect(await link.getAttribute("data-outside-clicked")).toBeNull();
+}
 
 test.describe("public identity", () => {
   test("homepage states confirmed identity only", async ({ page }, testInfo) => {
@@ -95,14 +146,19 @@ test.describe("public identity", () => {
       await menu.click();
       await expect(menu).toHaveAttribute("aria-expanded", "true");
       await expect(page.getByRole("navigation", { name: "Menu" }).getByRole("link", { name: "Qui je suis" })).toBeVisible();
+      await page.evaluate(() => window.scrollTo(0, 420));
+      const scrolled = await page.evaluate(() => window.scrollY);
+      expect(scrolled).toBeGreaterThan(200);
       await page.keyboard.press("Escape");
       await expect(menu).toHaveAttribute("aria-expanded", "false");
-      await menu.click();
+      expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(scrolled - 40);
+      await menu.evaluate((el) => (el as HTMLButtonElement).click());
       await expect(menu).toHaveAttribute("aria-expanded", "true");
       const heading = page.getByRole("heading", { name: "Eroish J Clevone" });
+      await heading.scrollIntoViewIfNeeded();
       const empty = await heading.boundingBox();
       expect(empty).toBeTruthy();
-      await page.touchscreen.tap(empty!.x + empty!.width / 2, empty!.y + empty!.height / 2);
+      await page.touchscreen.tap((empty?.x ?? 0) + (empty?.width ?? 0) / 2, (empty?.y ?? 0) + (empty?.height ?? 0) / 2);
       await expect(menu).toHaveAttribute("aria-expanded", "false");
       await expect(page).toHaveURL(/\/fr\/?$/);
       await menu.click();
@@ -132,32 +188,60 @@ test.describe("public identity", () => {
 
   test("mobile menu outside tap on a page link does not navigate", async ({ page }, testInfo) => {
     if (testInfo.project.name !== "mobile") test.skip();
+    expect(testInfo.project.use.hasTouch).toBeTruthy();
+    expect(testInfo.project.use.isMobile).toBeTruthy();
+    await watchOutsideLinkClicks(page);
     await page.goto("/fr");
     const menu = page.locator("button[aria-controls=\"mobile-nav\"]");
     await menu.click();
     await expect(menu).toHaveAttribute("aria-expanded", "true");
     const hero = page.getByRole("link", { name: "Entrer dans le registre" });
     await expect(hero).toBeVisible();
-    const box = await hero.boundingBox();
-    expect(box).toBeTruthy();
-    await page.touchscreen.tap(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await markOutsideLink(hero);
+    await pointActivate(page, hero, "touch");
     await expect(menu).toHaveAttribute("aria-expanded", "false");
-    await expect(page).toHaveURL(/\/fr\/?$/);
+    await assertHomeHeld(page, "fr", hero);
+
+    const footer = page.getByRole("contentinfo").getByRole("link", { name: "Confidentialité" });
+    await menu.click();
+    await expect(menu).toHaveAttribute("aria-expanded", "true");
+    await footer.scrollIntoViewIfNeeded();
+    await markOutsideLink(footer);
+    const scrolled = await page.evaluate(() => window.scrollY);
+    expect(scrolled).toBeGreaterThan(200);
+    await pointActivate(page, footer, "touch");
+    await expect(menu).toHaveAttribute("aria-expanded", "false");
+    await assertHomeHeld(page, "fr", footer);
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(scrolled - 40);
   });
 
   test("mobile menu outside mouse click on a page link does not navigate", async ({ page }, testInfo) => {
     if (testInfo.project.name !== "mobile") test.skip();
+    expect(testInfo.project.use.hasTouch).toBeTruthy();
+    expect(testInfo.project.use.isMobile).toBeTruthy();
+    await watchOutsideLinkClicks(page);
     await page.goto("/en");
     const menu = page.locator("button[aria-controls=\"mobile-nav\"]");
     await menu.click();
     await expect(menu).toHaveAttribute("aria-expanded", "true");
     const hero = page.getByRole("link", { name: "Enter the record" });
     await expect(hero).toBeVisible();
-    const box = await hero.boundingBox();
-    expect(box).toBeTruthy();
-    await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await markOutsideLink(hero);
+    await pointActivate(page, hero, "mouse");
     await expect(menu).toHaveAttribute("aria-expanded", "false");
-    await expect(page).toHaveURL(/\/en\/?$/);
+    await assertHomeHeld(page, "en", hero);
+
+    const footer = page.getByRole("contentinfo").getByRole("link", { name: "Privacy" });
+    await menu.click();
+    await expect(menu).toHaveAttribute("aria-expanded", "true");
+    await footer.scrollIntoViewIfNeeded();
+    await markOutsideLink(footer);
+    const scrolled = await page.evaluate(() => window.scrollY);
+    expect(scrolled).toBeGreaterThan(200);
+    await pointActivate(page, footer, "mouse");
+    await expect(menu).toHaveAttribute("aria-expanded", "false");
+    await assertHomeHeld(page, "en", footer);
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(scrolled - 40);
   });
 
   test("mobile menu link still navigates", async ({ page }, testInfo) => {
