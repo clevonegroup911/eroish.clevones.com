@@ -67,6 +67,7 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
         className="text-[0.72rem] uppercase tracking-[0.14em]"
         aria-expanded={open}
         aria-controls="mobile-nav"
+        aria-label={dict.nav.menu}
         onClick={() => setOpen((value) => !value)}
       >
         {open ? dict.nav.close : dict.nav.menu}

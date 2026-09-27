@@ -82,5 +82,7 @@ test("logout revokes the session token", async ({ request }, testInfo) => {
   });
   expect(reused.status()).toBeGreaterThanOrEqual(300);
   expect(reused.status()).toBeLessThan(400);
-  expect(await reused.text()).not.toMatch(LEAK);
+  const reusedBody = await reused.text();
+  expect(reusedBody).not.toMatch(/Command center|Audit log|Contact requests|Publish blocked|Learning proposal/i);
+  expect(reused.headers().location ?? reusedBody).toMatch(/admin\/login|NEXT_REDIRECT;replace;\/admin\/login/);
 });

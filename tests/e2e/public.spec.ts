@@ -90,7 +90,7 @@ test.describe("public identity", () => {
     await expect(page.getByText(/grandi et vécu dans différents pays, villes et provinces/).first()).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "fr");
     if (testInfo.project.name === "mobile") {
-      const menu = page.getByRole("button", { name: "Menu" });
+      const menu = page.locator("button[aria-controls=\"mobile-nav\"]");
       await expect(menu).toHaveAttribute("aria-expanded", "false");
       await menu.click();
       await expect(menu).toHaveAttribute("aria-expanded", "true");
