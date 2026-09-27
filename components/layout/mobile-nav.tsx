@@ -24,6 +24,7 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
   const panelRef = useRef<HTMLDivElement>(null);
   const guardRef = useRef<{ click?: (event: Event) => void; timer?: number }>({});
   const finishCloseRef = useRef<() => void>(() => {});
+  const armClickGuardRef = useRef<() => void>(() => {});
   const prefix = `/${locale}`;
   const links = [
     [dict.nav.who, `${prefix}/identity`],
@@ -69,6 +70,13 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
     document.addEventListener("click", onClick, true);
     guardRef.current.timer = window.setTimeout(() => finishCloseRef.current(), 500);
   }
+  armClickGuardRef.current = armClickGuard;
+
+  function isMenuChrome(target: EventTarget | null) {
+    if (!(target instanceof Element)) return false;
+    if (buttonRef.current?.contains(target)) return true;
+    return Boolean(target.closest("#mobile-nav"));
+  }
 
   useEffect(() => {
     return () => clearGuard();
@@ -106,8 +114,32 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
       }
     }
 
+    function onPointerDown(event: PointerEvent) {
+      if (isMenuChrome(event.target)) return;
+      const onBackdrop =
+        event.target instanceof Element && event.target.closest("#mobile-nav-backdrop");
+      if (onBackdrop) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      armClickGuardRef.current();
+    }
+
+    function onClick(event: MouseEvent) {
+      if (isMenuChrome(event.target)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      finishCloseRef.current();
+    }
+
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("click", onClick, true);
+    };
   }, [open]);
 
   return (
@@ -134,7 +166,7 @@ export function MobileNav({ locale, dict }: { locale: Locale; dict: Dictionary }
             <div
               id="mobile-nav-backdrop"
               aria-hidden="true"
-              className="fixed inset-0 z-30 lg:hidden"
+              className="fixed inset-0 z-30 touch-none lg:hidden"
               onPointerDown={(event) => {
                 event.preventDefault();
                 event.stopPropagation();

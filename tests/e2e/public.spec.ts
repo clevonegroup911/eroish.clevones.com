@@ -5,18 +5,15 @@ import { shot } from "./artifacts";
 async function watchOutsideLinkClicks(page: Page) {
   await page.addInitScript(() => {
     (window as unknown as { __outsideClicks?: number }).__outsideClicks = 0;
-    window.addEventListener(
-      "click",
-      (event) => {
-        const target = event.target;
-        if (!(target instanceof Element)) return;
-        const link = target.closest("a");
-        if (!link || link.closest("#mobile-nav")) return;
-        const bag = window as unknown as { __outsideClicks?: number };
-        bag.__outsideClicks = (bag.__outsideClicks ?? 0) + 1;
-      },
-      true,
-    );
+    window.addEventListener("click", (event) => {
+      if (event.defaultPrevented) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const link = target.closest("a");
+      if (!link || link.closest("#mobile-nav")) return;
+      const bag = window as unknown as { __outsideClicks?: number };
+      bag.__outsideClicks = (bag.__outsideClicks ?? 0) + 1;
+    });
   });
 }
 
@@ -36,11 +33,36 @@ async function markOutsideLink(locator: Locator) {
   });
 }
 
+async function blurAndScrollIntoView(page: Page, locator: Locator) {
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  const height = page.viewportSize()?.height ?? 844;
+  for (let i = 0; i < 16; i += 1) {
+    const box = await locator.boundingBox();
+    if (box && box.y >= 8 && box.y + box.height <= height - 8) break;
+    await page.mouse.wheel(0, 500);
+  }
+  const scrolled = await page.evaluate(() => window.scrollY);
+  expect(scrolled).toBeGreaterThan(200);
+  const box = await locator.boundingBox();
+  expect(box, "scrolled target must be in the viewport").toBeTruthy();
+  expect(box?.y ?? -1).toBeGreaterThanOrEqual(0);
+  expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(height + 1);
+  return scrolled;
+}
+
 async function pointActivate(page: Page, locator: Locator, mode: "touch" | "mouse") {
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   const box = await locator.boundingBox();
   expect(box, "target must be visible").toBeTruthy();
+  const viewport = page.viewportSize();
+  const maxX = (viewport?.width ?? 390) - 2;
+  const maxY = (viewport?.height ?? 844) - 2;
   const x = (box?.x ?? 0) + (box?.width ?? 0) / 2;
   const y = (box?.y ?? 0) + (box?.height ?? 0) / 2;
+  expect(x).toBeGreaterThan(0);
+  expect(x).toBeLessThan(maxX + 1);
+  expect(y).toBeGreaterThan(0);
+  expect(y).toBeLessThan(maxY + 1);
   if (mode === "touch") await page.touchscreen.tap(x, y);
   else await page.mouse.click(x, y);
 }
@@ -203,12 +225,11 @@ test.describe("public identity", () => {
     await assertHomeHeld(page, "fr", hero);
 
     const footer = page.getByRole("contentinfo").getByRole("link", { name: "Confidentialité" });
-    await menu.click();
+    const scrolled = await blurAndScrollIntoView(page, footer);
+    await menu.evaluate((el) => (el as HTMLButtonElement).click());
     await expect(menu).toHaveAttribute("aria-expanded", "true");
-    await footer.scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(scrolled - 40);
     await markOutsideLink(footer);
-    const scrolled = await page.evaluate(() => window.scrollY);
-    expect(scrolled).toBeGreaterThan(200);
     await pointActivate(page, footer, "touch");
     await expect(menu).toHaveAttribute("aria-expanded", "false");
     await assertHomeHeld(page, "fr", footer);
@@ -232,12 +253,11 @@ test.describe("public identity", () => {
     await assertHomeHeld(page, "en", hero);
 
     const footer = page.getByRole("contentinfo").getByRole("link", { name: "Privacy" });
-    await menu.click();
+    const scrolled = await blurAndScrollIntoView(page, footer);
+    await menu.evaluate((el) => (el as HTMLButtonElement).click());
     await expect(menu).toHaveAttribute("aria-expanded", "true");
-    await footer.scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(scrolled - 40);
     await markOutsideLink(footer);
-    const scrolled = await page.evaluate(() => window.scrollY);
-    expect(scrolled).toBeGreaterThan(200);
     await pointActivate(page, footer, "mouse");
     await expect(menu).toHaveAttribute("aria-expanded", "false");
     await assertHomeHeld(page, "en", footer);
