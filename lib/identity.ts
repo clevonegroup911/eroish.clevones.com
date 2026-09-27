@@ -19,6 +19,8 @@ export const CONFIRMED = {
   birthPlaceCity: "Kinshasa",
   birthPlaceCountryEn: "Democratic Republic of the Congo",
   birthPlaceCountryFr: "République démocratique du Congo",
+  livedAcrossEn: "Grew up and lived across different countries, cities and provinces",
+  livedAcrossFr: "A grandi et vécu dans différents pays, villes et provinces",
   siteHost: "eroish.clevones.com",
   siteUrl: "https://eroish.clevones.com",
   githubDescription: "Entrepreneur, Businessman, Builder",

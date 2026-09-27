@@ -7,8 +7,13 @@ test.describe("public identity", () => {
     await page.goto("/en");
     await expect(page.getByRole("heading", { name: "Eroish J Clevone" })).toBeVisible();
     await expect(page.locator("body")).not.toContainText("BUILD. LEAD. EXECUTE.");
+    await expect(page.locator("body")).not.toContainText("Build the man.");
     await expect(page.getByText("Eroish Clevone Jeamson")).toBeVisible();
     await expect(page.getByText(/Born in Kinshasa/).first()).toBeVisible();
+    await expect(
+      page.getByText(/Grew up and lived across different countries, cities and provinces/).first(),
+    ).toBeVisible();
+    await expect(page.getByText(/Third Culture Kid/).first()).toBeVisible();
     await expect(page.getByText("Associated with CLEVONE SARL", { exact: true })).toBeVisible();
     await expect(page.locator("body")).not.toContainText("net worth");
     await shot(page, testInfo.project.name === "mobile" ? "homepage_mobile" : "homepage_desktop");
@@ -20,7 +25,9 @@ test.describe("public identity", () => {
     await page.goto("/en/journey");
     await expect(page.getByRole("heading", { name: "Journey" })).toBeVisible();
     await expect(page.getByText("Born in Kinshasa")).toBeVisible();
-    await expect(page.getByText("Needs confirmation").first()).toBeVisible();
+    await expect(
+      page.getByText(/Grew up and lived across different countries, cities and provinces/).first(),
+    ).toBeVisible();
     await shot(page, `journey_timeline${suffix}`);
 
     await page.goto("/en/places");
@@ -77,14 +84,18 @@ test.describe("public identity", () => {
     await expect(page.getByText("Identité publique officielle", { exact: true })).toBeVisible();
     await expect(page.getByText("Entrepreneur · Homme d’affaires · Bâtisseur")).toBeVisible();
     await expect(page.locator("body")).not.toContainText("BUILD. LEAD. EXECUTE.");
+    await expect(page.getByText(/grandi et vécu dans différents pays, villes et provinces/).first()).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "fr");
     await shot(
       page,
       testInfo.project.name === "mobile" ? "homepage_fr_mobile" : "homepage_fr_desktop",
     );
     await page.getByRole("button", { name: "Explorer EJC" }).click();
-    await expect(page.getByRole("dialog", { name: "Explorer EJC" })).toBeVisible();
-    await page.getByRole("dialog", { name: "Explorer EJC" }).getByRole("link", { name: "Qui je suis" }).click();
+    const explore = page.getByRole("dialog", { name: "Explorer EJC" });
+    await expect(explore).toBeVisible();
+    const identityLink = explore.getByRole("link", { name: "Qui je suis" });
+    await expect(identityLink).toHaveAttribute("href", "/fr/identity");
+    await identityLink.click();
     await expect(page).toHaveURL(/\/fr\/identity/);
 
     await page.goto("/fr/now");

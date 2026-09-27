@@ -27,8 +27,8 @@ export function journeyChapters(locale: Locale): Chapter[] {
         id: "places",
         year: "—",
         title: "Une vie entre les lieux",
-        body: "A grandi et vécu dans différents pays, villes et provinces. Dimension multiculturelle, cosmopolite, Third Culture Kid — les villes précises restent à confirmer.",
-        status: "needs",
+        body: `Né à Kinshasa. ${CONFIRMED.livedAcrossFr} — un fait multicultural, cosmopolite, Third Culture Kid. Les autres lieux précis ne sont pas confirmés.`,
+        status: "verified",
       },
       {
         id: "builder",
@@ -63,11 +63,11 @@ export function journeyChapters(locale: Locale): Chapter[] {
       status: "verified",
     },
     {
-      id: "places",
-      year: "—",
-      title: "A life across places",
-      body: "Grew up and lived across different countries, cities and provinces. A multicultural, cosmopolitan, Third Culture dimension — specific cities remain unconfirmed.",
-      status: "needs",
+        id: "places",
+        year: "—",
+        title: "A life across places",
+        body: `Born in Kinshasa. ${CONFIRMED.livedAcrossEn} — a multicultural, cosmopolitan, Third Culture Kid fact. Other specific places are not confirmed.`,
+        status: "verified",
     },
     {
       id: "builder",

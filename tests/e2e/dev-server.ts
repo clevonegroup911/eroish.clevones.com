@@ -2,17 +2,22 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
+import { e2eBind, e2eOrigin } from "./origin";
+
 const root = path.resolve(__dirname, "../..");
+const bind = e2eBind();
+const origin = e2eOrigin();
+
 const env = {
   ...process.env,
   DATABASE_URL: process.env.DATABASE_URL ?? "file:./dev.db",
   AUTH_SECRET: process.env.AUTH_SECRET ?? "dev-only-auth-secret-change-before-production-use-32b",
-  APP_ORIGIN: process.env.APP_ORIGIN ?? "http://127.0.0.1:3000",
+  APP_ORIGIN: origin,
   SITE_URL: process.env.SITE_URL ?? "https://eroish.clevones.com",
   ADMIN_BOOTSTRAP_EMAIL: process.env.ADMIN_BOOTSTRAP_EMAIL ?? "admin@localhost",
   ADMIN_BOOTSTRAP_PASSWORD: process.env.ADMIN_BOOTSTRAP_PASSWORD ?? "change-this-admin-password",
-  PORT: process.env.PORT ?? "3000",
-  HOSTNAME: "127.0.0.1",
+  PORT: bind.port,
+  HOSTNAME: bind.host,
 };
 
 async function run(command: string, args: string[]) {
@@ -30,11 +35,13 @@ async function main() {
   await run("npx", ["tsx", "prisma/seed.ts"]);
 
   const useStart = existsSync(path.join(root, ".next/BUILD_ID"));
-  const child = spawn("npx", useStart ? ["next", "start", "-H", "127.0.0.1", "-p", "3000"] : ["next", "dev", "-H", "127.0.0.1", "-p", "3000"], {
-    cwd: root,
-    env,
-    stdio: "inherit",
-  });
+  const child = spawn(
+    "npx",
+    useStart
+      ? ["next", "start", "-H", bind.host, "-p", bind.port]
+      : ["next", "dev", "-H", bind.host, "-p", bind.port],
+    { cwd: root, env, stdio: "inherit" },
+  );
 
   child.on("exit", (code) => {
     process.exit(code ?? 1);

@@ -92,6 +92,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <li>
               {dict.home.associatedWith} {CONFIRMED.organization}
             </li>
+            <li>{dict.home.multicultural}</li>
           </ul>
         </div>
         <div>

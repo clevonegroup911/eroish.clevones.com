@@ -57,7 +57,7 @@ async function main() {
         summary:
           "Congolese entrepreneur, businessman and builder. Founder/CEO. Associated with CLEVONE SARL. The public record states only what can be verified.",
         multiculturalNote:
-          "Grew up and lived across different countries, cities and provinces. Specific places beyond Kinshasa need confirmation.",
+          "Born in Kinshasa. Grew up and lived across different countries, cities and provinces — a multicultural, cosmopolitan, Third Culture Kid fact. Other specific places are not confirmed.",
         portraitCaption: "Portrait to be supplied — honest placeholder.",
         publishState: "PUBLISHED",
         verification: "VERIFIED",
@@ -78,7 +78,7 @@ async function main() {
         summary:
           "Entrepreneur congolais, homme d’affaires et bâtisseur. Fondateur et CEO. Associé à CLEVONE SARL. Le registre public n’énonce que ce qui peut être vérifié.",
         multiculturalNote:
-          "A grandi et vécu dans différents pays, villes et provinces. Les lieux précis hors Kinshasa restent à confirmer.",
+          "Né à Kinshasa. A grandi et vécu dans différents pays, villes et provinces — un fait multicultural, cosmopolite, Third Culture Kid. Les autres lieux précis ne sont pas confirmés.",
         portraitCaption: "Portrait à fournir — placeholder honnête.",
         publishState: "PUBLISHED",
         verification: "VERIFIED",
@@ -123,9 +123,9 @@ async function main() {
       lng: null,
       confirmation: "NEEDS_CONFIRMATION",
       noteEn:
-        "Grew up and lived across different countries, cities and provinces. This entry is a structured slot until a specific place is confirmed.",
+        "Grew up and lived across different countries, cities and provinces. This slot does not name another place until one is confirmed.",
       noteFr:
-        "A grandi et vécu dans différents pays, villes et provinces. Emplacement structuré jusqu’à confirmation d’un lieu précis.",
+        "A grandi et vécu dans différents pays, villes et provinces. Cet emplacement ne nomme pas un autre lieu tant qu’il n’est pas confirmé.",
       sortOrder: 1,
       publishState: "REVIEW",
       verification: "NEEDS_CONFIRMATION",
@@ -381,10 +381,10 @@ async function main() {
         slug: "origin-facts",
         titleEn: "Confirmed origin",
         titleFr: "Origine confirmée",
-        bodyEn: `Born in Kinshasa, Democratic Republic of the Congo, on 1 September 1994. Grew up and lived across different countries, cities and provinces; those specific places are not confirmed.`,
-        bodyFr: `Né à Kinshasa, République démocratique du Congo, le 1er septembre 1994. A grandi et vécu dans différents pays, villes et provinces ; ces lieux précis ne sont pas confirmés.`,
+        bodyEn: `Born in Kinshasa, Democratic Republic of the Congo, on 1 September 1994. Grew up and lived across different countries, cities and provinces — a multicultural, cosmopolitan, Third Culture Kid fact. Other specific places are not confirmed.`,
+        bodyFr: `Né à Kinshasa, République démocratique du Congo, le 1er septembre 1994. A grandi et vécu dans différents pays, villes et provinces — un fait multicultural, cosmopolite, Third Culture Kid. Les autres lieux précis ne sont pas confirmés.`,
         canonicalUrl: "/en/places",
-        tags: "born kinshasa 1994 origin birthplace drc congo multicultural",
+        tags: "born kinshasa 1994 origin birthplace drc congo multicultural cosmopolitan third culture kid",
         approved: true,
         publishState: "PUBLISHED",
         verification: "VERIFIED",

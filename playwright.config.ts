@@ -1,6 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
-const origin = process.env.E2E_ORIGIN ?? "http://127.0.0.1:3000";
+import { e2eOrigin } from "./tests/e2e/origin";
+
+const origin = e2eOrigin();
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -40,7 +42,7 @@ export default defineConfig({
   webServer: {
     command: "npx tsx tests/e2e/dev-server.ts",
     url: `${origin}/health`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",
     timeout: 180_000,
   },
 });

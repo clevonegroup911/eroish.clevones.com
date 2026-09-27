@@ -14,7 +14,7 @@ Nothing below is published as fact until EJC confirms it **and** a source exists
 | Title | Founder/CEO |
 | Associated organization | CLEVONE SARL (exposure only — not a product catalogue) |
 | Birth | Kinshasa, Democratic Republic of the Congo, 1 September 1994 |
-| Lived across | Different countries, cities and provinces (specifics unconfirmed) |
+| Lived across | Born in Kinshasa. Grew up and lived across different countries, cities and provinces — multicultural, cosmopolitan, Third Culture Kid. Other specific places unconfirmed. |
 
 ## Facts to confirm (placeholders exist)
 

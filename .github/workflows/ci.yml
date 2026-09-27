@@ -17,6 +17,7 @@ env:
   DATABASE_URL: file:./dev.db
   AUTH_SECRET: ci-only-auth-secret-not-for-production-use-32b
   APP_ORIGIN: http://127.0.0.1:3000
+  E2E_ORIGIN: http://127.0.0.1:3100
   SITE_URL: https://eroish.clevones.com
   ADMIN_BOOTSTRAP_EMAIL: admin@localhost
   ADMIN_BOOTSTRAP_PASSWORD: change-this-admin-password

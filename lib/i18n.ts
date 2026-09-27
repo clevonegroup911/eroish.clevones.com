@@ -109,6 +109,8 @@ const en = {
     bornIn: "Born in",
     associatedWith: "Associated with",
     nationality: "Congolese",
+    multicultural:
+      "Grew up and lived across different countries, cities and provinces — a multicultural, cosmopolitan, Third Culture Kid fact. Other specific places are not confirmed.",
   },
   now: {
     title: "Now",
@@ -236,11 +238,12 @@ const en = {
   },
   places: {
     title: "Places",
-    lead: "A multicultural, cosmopolitan, Third Culture dimension — without naming cities that are not confirmed.",
+    lead: "Born in Kinshasa. Grew up and lived across different countries, cities and provinces — a multicultural, cosmopolitan, Third Culture Kid fact. Other specific places are not named.",
     confirmed: "Confirmed",
     needs: "Needs confirmation",
     mapCaption: "Schematic, not to scale. Only confirmed places are shown.",
-    schematicNote: "Kinshasa is shown in western DRC. Other lived places stay off the map until confirmed.",
+    schematicNote:
+      "Kinshasa is shown in western DRC. Other countries, cities and provinces from that record are not named on this schematic.",
     schematicTitle: "Schematic — western DRC",
     eastNote: "east (not plotted)",
     westLabel: "western DRC",
@@ -277,7 +280,6 @@ const en = {
   },
   footer: {
     official: "Official independent public identity — not a CLEVONE SARL product site.",
-    cycle: "Build the man. Document the action. Prove the record. Protect the name.",
   },
   admin: {
     login: "Admin sign in",
@@ -385,6 +387,8 @@ const fr: Dictionary = {
     bornIn: "Né à",
     associatedWith: "Associé à",
     nationality: "Congolais",
+    multicultural:
+      "A grandi et vécu dans différents pays, villes et provinces — un fait multicultural, cosmopolite, Third Culture Kid. Les autres lieux précis ne sont pas confirmés.",
   },
   now: {
     title: "Maintenant",
@@ -512,11 +516,12 @@ const fr: Dictionary = {
   },
   places: {
     title: "Lieux",
-    lead: "Une dimension multiculturelle, cosmopolite, Third Culture Kid — sans nommer des villes non confirmées.",
+    lead: "Né à Kinshasa. A grandi et vécu dans différents pays, villes et provinces — un fait multicultural, cosmopolite, Third Culture Kid. Les autres lieux précis ne sont pas nommés.",
     confirmed: "Confirmé",
     needs: "À confirmer",
     mapCaption: "Schéma, pas à l’échelle. Seuls les lieux confirmés sont indiqués.",
-    schematicNote: "Kinshasa est indiqué à l’ouest de la RDC. Les autres lieux vécus restent hors carte jusqu’à confirmation.",
+    schematicNote:
+      "Kinshasa est indiqué à l’ouest de la RDC. Les autres pays, villes et provinces de ce registre ne sont pas nommés sur ce schéma.",
     schematicTitle: "Schéma — ouest de la RDC",
     eastNote: "est (non placé)",
     westLabel: "ouest de la RDC",
@@ -553,7 +558,6 @@ const fr: Dictionary = {
   },
   footer: {
     official: "Identité publique officielle indépendante — pas un site produit CLEVONE SARL.",
-    cycle: "Construire l’homme. Documenter l’action. Prouver le registre. Protéger le nom.",
   },
   admin: {
     login: "Connexion admin",

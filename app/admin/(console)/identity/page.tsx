@@ -7,8 +7,8 @@ export default async function AdminIdentityPage() {
     <>
       <h1 className="editorial text-4xl">Identity</h1>
       <p className="mt-3 max-w-2xl text-ink-soft">
-        Optional tagline is empty by default. It is not a confirmed EJC statement. If set, the
-        public site shows it with a needs-confirmation mark.
+        Optional tagline stays empty. Do not invent or assign a personal motto. The public site
+        renders nothing when this field is empty; a filled value is marked needs confirmation.
       </p>
       <ul className="mt-8 space-y-4">
         {profiles.map((profile) => (

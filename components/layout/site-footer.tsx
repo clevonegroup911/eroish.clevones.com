@@ -8,7 +8,6 @@ export function SiteFooter({ locale, dict }: { locale: Locale; dict: Dictionary 
     <footer className="border-t border-rule px-5 py-10 md:px-8">
       <p className="editorial text-2xl">{dict.brand.signature}</p>
       <p className="mt-3 max-w-xl text-sm text-muted">{dict.footer.official}</p>
-      <p className="mt-2 text-sm">{dict.footer.cycle}</p>
       <nav aria-label="Footer" className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-[0.72rem] uppercase tracking-[0.12em]">
         <Link href={`${prefix}/journey`}>{dict.nav.journey}</Link>
         <Link href={`${prefix}/places`}>{dict.nav.places}</Link>
