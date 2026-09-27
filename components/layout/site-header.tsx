@@ -18,7 +18,7 @@ export function SiteHeader({
 
   return (
     <header
-      className={`relative flex items-center justify-between gap-4 border-b px-5 py-4 md:px-8 ${
+      className={`relative z-50 flex items-center justify-between gap-4 border-b px-5 py-4 md:px-8 ${
         inverted ? "border-white/20 text-paper" : "border-rule text-ink"
       }`}
     >

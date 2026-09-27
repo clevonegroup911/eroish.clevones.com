@@ -25,6 +25,8 @@ export function adminLoginPath(nextPath: string): string {
  * Next's rewrite can decode `to` once, so `next=` may arrive as
  * `/admin/login?next=/admin/ledger?x=1&y=2`. Do not parse that with
  * URLSearchParams (it would treat `&y=2` as a sibling). Slice after `next=`.
+ * Only decodeURIComponent when the slice is still percent-encoded (`%2F…`);
+ * a second decode would turn `tab=a%26b` into `tab=a&b`.
  */
 export function reencodeAdminLoginRedirect(to: string): string {
   if (!to.startsWith("/admin/login")) return to;
@@ -32,11 +34,14 @@ export function reencodeAdminLoginRedirect(to: string): string {
   const idx = to.indexOf(marker);
   if (idx === -1) return to;
   const rawNext = to.slice(idx + marker.length);
-  let decoded = rawNext;
+  const next = rawNext.startsWith("%") ? decodeOnce(rawNext) : rawNext;
+  return adminLoginPath(next);
+}
+
+function decodeOnce(value: string): string {
   try {
-    decoded = decodeURIComponent(rawNext);
+    return decodeURIComponent(value);
   } catch {
-    decoded = rawNext;
+    return value;
   }
-  return adminLoginPath(decoded);
 }

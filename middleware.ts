@@ -32,8 +32,7 @@ function applySecurity(request: NextRequest, response: NextResponse, csp: string
 }
 
 function pathAndSearch(url: URL): string {
-  const query = url.searchParams.toString();
-  return query ? `${url.pathname}?${query}` : url.pathname;
+  return `${url.pathname}${url.search}`;
 }
 
 function rewriteToRelativeRedirect(request: NextRequest, to: string, csp: string) {

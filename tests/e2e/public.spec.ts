@@ -99,7 +99,10 @@ test.describe("public identity", () => {
       await expect(menu).toHaveAttribute("aria-expanded", "false");
       await menu.click();
       await expect(menu).toHaveAttribute("aria-expanded", "true");
-      await page.locator("#content").dispatchEvent("pointerdown", { bubbles: true, cancelable: true });
+      const heading = page.getByRole("heading", { name: "Eroish J Clevone" });
+      const empty = await heading.boundingBox();
+      expect(empty).toBeTruthy();
+      await page.touchscreen.tap(empty!.x + empty!.width / 2, empty!.y + empty!.height / 2);
       await expect(menu).toHaveAttribute("aria-expanded", "false");
       await expect(page).toHaveURL(/\/fr\/?$/);
       await menu.click();
@@ -125,6 +128,36 @@ test.describe("public identity", () => {
     if (testInfo.project.name !== "mobile") {
       await shot(page, "now_fr");
     }
+  });
+
+  test("mobile menu outside tap on a page link does not navigate", async ({ page }, testInfo) => {
+    if (testInfo.project.name !== "mobile") test.skip();
+    await page.goto("/fr");
+    const menu = page.locator("button[aria-controls=\"mobile-nav\"]");
+    await menu.click();
+    await expect(menu).toHaveAttribute("aria-expanded", "true");
+    const hero = page.getByRole("link", { name: "Entrer dans le registre" });
+    await expect(hero).toBeVisible();
+    const box = await hero.boundingBox();
+    expect(box).toBeTruthy();
+    await page.touchscreen.tap(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await expect(menu).toHaveAttribute("aria-expanded", "false");
+    await expect(page).toHaveURL(/\/fr\/?$/);
+  });
+
+  test("mobile menu outside mouse click on a page link does not navigate", async ({ page }, testInfo) => {
+    if (testInfo.project.name !== "mobile") test.skip();
+    await page.goto("/en");
+    const menu = page.locator("button[aria-controls=\"mobile-nav\"]");
+    await menu.click();
+    await expect(menu).toHaveAttribute("aria-expanded", "true");
+    const hero = page.getByRole("link", { name: "Enter the record" });
+    await expect(hero).toBeVisible();
+    const box = await hero.boundingBox();
+    expect(box).toBeTruthy();
+    await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await expect(menu).toHaveAttribute("aria-expanded", "false");
+    await expect(page).toHaveURL(/\/en\/?$/);
   });
 
   test("mobile menu link still navigates", async ({ page }, testInfo) => {
